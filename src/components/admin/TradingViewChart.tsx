@@ -33,8 +33,19 @@ export const TradingViewChart = ({ ticker }: TradingViewChartProps) => {
           container: containerRef.current,
           autosize: true,
           theme: 'dark',
-          time_zone: "America/New_York", // Changed from timezone to time_zone
+          time_zone: "America/New_York",
           datafeed: createDatafeedConfig(fetchBars),
+          library_path: 'https://s3.tradingview.com/tv.js',
+          width: '100%',
+          height: '100%',
+          interval: 'D',
+          timezone: 'America/New_York',
+          style: '1',
+          locale: 'en',
+          toolbar_bg: '#f1f3f6',
+          enable_publishing: false,
+          allow_symbol_change: true,
+          container_id: 'tradingview_chart'
         });
       } catch (error) {
         console.error('Error initializing TradingView widget:', error);
@@ -42,23 +53,27 @@ export const TradingViewChart = ({ ticker }: TradingViewChartProps) => {
       }
     };
 
-    // Initialize widget with a small delay to ensure container is ready
-    const timeoutId = setTimeout(initializeWidget, 100);
+    // Initialize widget with a delay to ensure container is ready
+    const timeoutId = setTimeout(initializeWidget, 500);
 
     return () => {
       clearTimeout(timeoutId);
       if (widgetRef.current) {
-        widgetRef.current.remove();
-        widgetRef.current = null;
+        try {
+          widgetRef.current.remove();
+          widgetRef.current = null;
+        } catch (error) {
+          console.error('Error cleaning up widget:', error);
+        }
       }
     };
   }, [ticker, isScriptLoaded, fetchBars]);
 
   return (
     <div 
-      ref={containerRef} 
-      style={{ width: '100%', height: '600px' }} 
-      className="border rounded-lg overflow-hidden"
+      ref={containerRef}
+      id="tradingview_chart"
+      className="w-full h-[600px] border rounded-lg overflow-hidden bg-background"
     />
   );
 };
