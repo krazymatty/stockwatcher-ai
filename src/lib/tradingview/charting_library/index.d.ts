@@ -20,6 +20,7 @@ declare module '@/lib/tradingview/charting_library' {
     client_id?: string;
     user_id?: string;
     theme?: string;
+    time_zone?: string;
   }
 
   export class widget {

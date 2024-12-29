@@ -19,6 +19,7 @@ export interface ChartingLibraryWidgetOptions {
   client_id?: string;
   user_id?: string;
   theme?: string;
+  time_zone?: string;
 }
 
 export interface ChartingLibraryWidget {
