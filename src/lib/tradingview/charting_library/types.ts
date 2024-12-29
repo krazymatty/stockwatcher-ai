@@ -20,6 +20,7 @@ export interface ChartingLibraryWidgetOptions {
   user_id?: string;
   theme?: string;
   time_zone?: string;
+  allow_symbol_change?: boolean;
 }
 
 export interface ChartingLibraryWidget {
