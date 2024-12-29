@@ -24,7 +24,10 @@ export const AddTickerForm = ({ refetch }: AddTickerFormProps) => {
         .insert([{ 
           ticker: newTicker.toUpperCase(),
           user_id: session.user.id,
-          created_by_email: session.user.email
+          created_by_email: session.user.email,
+          instrument_type: 'stock', // Default to stock type
+          display_name: `Stock: ${newTicker.toUpperCase()}`,
+          metadata: { validated: false }
         }]);
 
       if (error) throw error;

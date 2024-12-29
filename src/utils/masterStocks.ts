@@ -9,7 +9,10 @@ export const addTickerToMasterStocks = async (ticker: string, userId: string, em
     .upsert({ 
       ticker,
       user_id: userId,
-      created_by_email: username
+      created_by_email: username,
+      instrument_type: 'stock', // Default to stock type
+      display_name: `Stock: ${ticker.toUpperCase()}`,
+      metadata: { validated: false }
     });
 
   return { error };
@@ -51,7 +54,10 @@ export const updateMasterStocksList = async (userId: string, email: string) => {
         tickersToAdd.map((ticker) => ({
           ticker,
           user_id: userId,
-          created_by_email: username
+          created_by_email: username,
+          instrument_type: 'stock', // Default to stock type
+          display_name: `Stock: ${ticker.toUpperCase()}`,
+          metadata: { validated: false }
         }))
       );
 
