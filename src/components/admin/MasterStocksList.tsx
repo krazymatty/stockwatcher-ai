@@ -1,10 +1,12 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Trash, ArrowUpDown } from "lucide-react";
+import { Trash, ArrowUpDown, LineChart } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Database } from "@/integrations/supabase/types";
 import { useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { StockHistoricalChart } from "./StockHistoricalChart";
 
 type MasterStock = Database["public"]["Tables"]["master_stocks"]["Row"];
 type SortField = keyof Pick<MasterStock, "ticker" | "created_by_email" | "created_at" | "last_updated">;
@@ -18,6 +20,7 @@ interface MasterStocksListProps {
 export const MasterStocksList = ({ stocks, refetch }: MasterStocksListProps) => {
   const [sortField, setSortField] = useState<SortField>("ticker");
   const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
+  const [selectedTicker, setSelectedTicker] = useState<string | null>(null);
 
   const handleDeleteTicker = async (ticker: string) => {
     try {
@@ -84,7 +87,7 @@ export const MasterStocksList = ({ stocks, refetch }: MasterStocksListProps) => 
             <TableHead>
               <SortButton field="last_updated">Last Updated</SortButton>
             </TableHead>
-            <TableHead className="w-[100px]">Actions</TableHead>
+            <TableHead className="w-[150px]">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -98,7 +101,26 @@ export const MasterStocksList = ({ stocks, refetch }: MasterStocksListProps) => 
                   ? new Date(stock.last_updated).toLocaleDateString()
                   : "-"}
               </TableCell>
-              <TableCell>
+              <TableCell className="flex items-center gap-2">
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setSelectedTicker(stock.ticker)}
+                    >
+                      <LineChart className="h-4 w-4" />
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-3xl">
+                    <DialogHeader>
+                      <DialogTitle>Historical Data for {stock.ticker}</DialogTitle>
+                    </DialogHeader>
+                    {selectedTicker === stock.ticker && (
+                      <StockHistoricalChart ticker={stock.ticker} />
+                    )}
+                  </DialogContent>
+                </Dialog>
                 <Button
                   variant="ghost"
                   size="icon"
