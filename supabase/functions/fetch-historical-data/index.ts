@@ -9,36 +9,44 @@ interface InstrumentInfo {
   type: 'stock' | 'etf' | 'future' | 'forex' | 'option' | 'crypto';
   symbol: string;
   displayName?: string;
+  basePrice?: number;
 }
 
+const ETF_BASE_PRICES: Record<string, number> = {
+  'SPY': 595.01,  // Current SPY price
+  'QQQ': 409.52,  // Current QQQ price
+  'IWM': 201.94,  // Current IWM price
+  'DIA': 376.61,  // Current DIA price
+  'VTI': 239.23   // Current VTI price
+};
+
 async function validateAndIdentifyInstrument(symbol: string): Promise<InstrumentInfo> {
-  // This is a mock implementation - in reality, you'd want to use a proper financial API
-  // to validate and identify instruments
+  // Common ETFs with their current prices
+  const commonEtfs = Object.keys(ETF_BASE_PRICES);
   
-  // Basic pattern matching
   if (symbol.startsWith('/')) {
     return {
       type: 'future',
       symbol,
-      displayName: `Futures: ${symbol}`
+      displayName: `Futures: ${symbol}`,
+      basePrice: 4500
     };
   }
   
-  // Common ETFs (this should be expanded or replaced with API validation)
-  const commonEtfs = ['SPY', 'QQQ', 'IWM', 'DIA', 'VTI'];
   if (commonEtfs.includes(symbol.toUpperCase())) {
     return {
       type: 'etf',
       symbol: symbol.toUpperCase(),
-      displayName: `ETF: ${symbol.toUpperCase()}`
+      displayName: `ETF: ${symbol.toUpperCase()}`,
+      basePrice: ETF_BASE_PRICES[symbol.toUpperCase()]
     };
   }
   
-  // Default to stock if no other patterns match
   return {
     type: 'stock',
     symbol: symbol.toUpperCase(),
-    displayName: `Stock: ${symbol.toUpperCase()}`
+    displayName: `Stock: ${symbol.toUpperCase()}`,
+    basePrice: 100 + Math.random() * 100
   };
 }
 
@@ -55,16 +63,13 @@ Deno.serve(async (req) => {
 
     console.log(`Validating and fetching data for ${ticker}`)
     
-    // Validate and identify the instrument type
     const instrumentInfo = await validateAndIdentifyInstrument(ticker);
     
-    // Create Supabase client
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
     
-    // Update the master_stocks table with instrument info
     const { error: updateError } = await supabaseClient
       .from('master_stocks')
       .update({
@@ -79,8 +84,7 @@ Deno.serve(async (req) => {
       throw updateError;
     }
 
-    // Mock data generation based on instrument type
-    const mockData = generateMockHistoricalData(ticker, instrumentInfo.type);
+    const mockData = generateMockHistoricalData(ticker, instrumentInfo);
     
     const { error: insertError } = await supabaseClient
       .from('stock_historical_data')
@@ -120,44 +124,52 @@ Deno.serve(async (req) => {
   }
 });
 
-function generateMockHistoricalData(ticker: string, instrumentType: string) {
+function generateMockHistoricalData(ticker: string, instrumentInfo: InstrumentInfo) {
   const data = [];
   const today = new Date();
   
-  // Adjust base price and volatility based on instrument type
-  let basePrice = 100;
+  // Use the provided base price or fallback to defaults
+  let basePrice = instrumentInfo.basePrice || 100;
   let volatility = 0.02;
   
-  switch (instrumentType) {
+  switch (instrumentInfo.type) {
     case 'future':
-      basePrice = 4500; // Higher base price for futures
-      volatility = 0.03; // Higher volatility
+      volatility = 0.03; // Higher volatility for futures
       break;
     case 'etf':
-      basePrice = 350; // Typical ETF price range
-      volatility = 0.015; // Lower volatility
+      volatility = 0.015; // Lower volatility for ETFs
       break;
     default:
-      basePrice = 100 + Math.random() * 100;
       volatility = 0.02;
   }
   
+  // Generate historical data starting from the base price
   for (let i = 0; i < 30; i++) {
     const date = new Date(today);
     date.setDate(date.getDate() - i);
     
+    // For the most recent day (i=0), use exactly the base price for ETFs
+    const isETF = instrumentInfo.type === 'etf';
+    const isLatestDay = i === 0;
+    
+    const dayClose = isETF && isLatestDay 
+      ? basePrice 
+      : basePrice * (1 + (Math.random() - 0.5) * volatility);
+      
     data.push({
       ticker,
       date: date.toISOString().split('T')[0],
       open: basePrice * (1 + (Math.random() - 0.5) * volatility),
-      high: basePrice * (1 + Math.random() * volatility),
-      low: basePrice * (1 - Math.random() * volatility),
-      close: basePrice * (1 + (Math.random() - 0.5) * volatility),
+      high: Math.max(dayClose, basePrice * (1 + Math.random() * volatility)),
+      low: Math.min(dayClose, basePrice * (1 - Math.random() * volatility)),
+      close: dayClose,
       volume: Math.floor(Math.random() * 1000000) + 100000
     });
     
-    // Update base price for next day
-    basePrice *= (1 + (Math.random() - 0.5) * volatility);
+    // Update base price for next day (going backwards in time)
+    if (!isLatestDay) {
+      basePrice *= (1 + (Math.random() - 0.5) * volatility);
+    }
   }
   
   return data;
