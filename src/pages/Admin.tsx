@@ -14,12 +14,14 @@ import {
 import { Database } from "@/integrations/supabase/types";
 import { Plus, Trash } from "lucide-react";
 import { toast } from "sonner";
+import { useSession } from "@supabase/auth-helpers-react";
 
 type MasterStock = Database["public"]["Tables"]["master_stocks"]["Row"];
 
 const Admin = () => {
   const [newTicker, setNewTicker] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
+  const session = useSession();
 
   const { data: stocks, refetch } = useQuery({
     queryKey: ["master-stocks"],
@@ -45,12 +47,16 @@ const Admin = () => {
 
   const handleAddTicker = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newTicker) return;
+    if (!newTicker || !session?.user) return;
 
     try {
       const { error } = await supabase
         .from("master_stocks")
-        .insert([{ ticker: newTicker.toUpperCase() }]);
+        .insert([{ 
+          ticker: newTicker.toUpperCase(),
+          user_id: session.user.id,
+          created_by_email: session.user.email
+        }]);
 
       if (error) throw error;
 
@@ -113,6 +119,7 @@ const Admin = () => {
           <TableHeader>
             <TableRow>
               <TableHead>Ticker</TableHead>
+              <TableHead>Added By</TableHead>
               <TableHead>Created At</TableHead>
               <TableHead>Last Updated</TableHead>
               <TableHead className="w-[100px]">Actions</TableHead>
@@ -122,6 +129,7 @@ const Admin = () => {
             {stocks?.map((stock) => (
               <TableRow key={stock.ticker}>
                 <TableCell className="font-medium">{stock.ticker}</TableCell>
+                <TableCell>{stock.created_by_email || 'Unknown'}</TableCell>
                 <TableCell>{new Date(stock.created_at).toLocaleDateString()}</TableCell>
                 <TableCell>
                   {stock.last_updated

@@ -12,18 +12,24 @@ export type Database = {
       master_stocks: {
         Row: {
           created_at: string
+          created_by_email: string | null
           last_updated: string | null
           ticker: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string
+          created_by_email?: string | null
           last_updated?: string | null
           ticker: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string
+          created_by_email?: string | null
           last_updated?: string | null
           ticker?: string
+          user_id?: string | null
         }
         Relationships: []
       }
