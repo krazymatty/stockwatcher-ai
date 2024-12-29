@@ -15,52 +15,62 @@ export const TradingViewChart = ({ ticker }: TradingViewChartProps) => {
   const { fetchBars } = useStockHistoricalData();
 
   useEffect(() => {
-    // Only proceed if script is loaded and container is ready
-    if (!isScriptLoaded || !containerRef.current || !window.TradingView) {
-      return;
-    }
+    let timeoutId: NodeJS.Timeout;
 
-    // Clean up previous widget instance if it exists
-    if (widgetRef.current) {
-      try {
-        widgetRef.current.remove();
-      } catch (error) {
-        console.error('Error cleaning up previous widget:', error);
-      }
-      widgetRef.current = null;
-    }
-
-    // Wait for the next frame to ensure DOM is ready
     const initializeWidget = () => {
-      if (!containerRef.current) return; // Double check container still exists
+      // Only proceed if script is loaded and container is ready
+      if (!isScriptLoaded || !containerRef.current || !window.TradingView) {
+        return;
+      }
+
+      // Clean up previous widget instance if it exists
+      if (widgetRef.current) {
+        try {
+          widgetRef.current.remove();
+        } catch (error) {
+          console.error('Error cleaning up previous widget:', error);
+        }
+        widgetRef.current = null;
+      }
 
       try {
         console.log('Initializing TradingView widget for ticker:', ticker);
         
-        widgetRef.current = new window.TradingView.widget({
-          symbol: ticker,
-          container: containerRef.current, // Pass the HTMLElement directly
-          autosize: true,
-          theme: 'dark',
-          time_zone: "America/New_York",
-          datafeed: createDatafeedConfig(fetchBars),
-          library_path: 'https://s3.tradingview.com/tv.js/',
-          interval: 'D',
-          locale: 'en',
-          disabled_features: ['header_symbol_search'],
-          enabled_features: [],
-          allow_symbol_change: false
-        });
+        // Create a unique container ID
+        const containerId = `tv_chart_${Date.now()}`;
+        containerRef.current.id = containerId;
+        
+        // Wait a bit to ensure DOM is fully ready
+        timeoutId = setTimeout(() => {
+          if (!containerRef.current) return;
+          
+          widgetRef.current = new window.TradingView.widget({
+            symbol: ticker,
+            container_id: containerId,
+            autosize: true,
+            theme: 'dark',
+            time_zone: "America/New_York",
+            datafeed: createDatafeedConfig(fetchBars),
+            library_path: 'https://s3.tradingview.com/tv.js/',
+            interval: 'D',
+            locale: 'en',
+            disabled_features: ['header_symbol_search'],
+            enabled_features: [],
+            allow_symbol_change: false
+          });
+        }, 100);
       } catch (error) {
         console.error('Error initializing TradingView widget:', error);
         toast.error('Error initializing chart');
       }
     };
 
-    // Use requestAnimationFrame to ensure DOM is ready
-    requestAnimationFrame(initializeWidget);
+    initializeWidget();
 
     return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
       if (widgetRef.current) {
         try {
           widgetRef.current.remove();
@@ -75,7 +85,6 @@ export const TradingViewChart = ({ ticker }: TradingViewChartProps) => {
   return (
     <div 
       ref={containerRef}
-      id="tradingview_chart"
       className="w-full h-[600px] border rounded-lg overflow-hidden bg-background"
     />
   );

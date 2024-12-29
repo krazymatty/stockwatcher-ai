@@ -10,6 +10,7 @@ export interface ChartingLibraryWidgetOptions {
   autosize?: boolean;
   studiesOverrides?: Record<string, any>;
   container?: HTMLElement;
+  container_id?: string;
   datafeed?: any;
   library_path?: string;
   locale?: string;
