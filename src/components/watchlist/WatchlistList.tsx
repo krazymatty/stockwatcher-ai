@@ -21,7 +21,7 @@ export const WatchlistList = ({
 }: WatchlistListProps) => {
   const session = useSession();
 
-  const handleSetDefaultWatchlist = async (watchlistId: string) => {
+  const handleSetDefaultWatchlist = async (watchlist: Watchlist) => {
     if (!session?.user?.id) {
       toast.error("You must be logged in to set a default watchlist");
       return;
@@ -32,24 +32,17 @@ export const WatchlistList = ({
       const { error: updateError } = await supabase
         .from('profiles')
         .update({ 
-          default_watchlist_id: watchlistId,
+          default_watchlist_id: watchlist.id,
           updated_at: new Date().toISOString()
         })
         .eq('id', session.user.id);
 
       if (updateError) throw updateError;
 
-      // Update local state by modifying the is_default property
-      const updatedWatchlists = watchlists.map(w => ({
-        ...w,
-        is_default: w.id === watchlistId
-      }));
-
-      // Re-sort watchlists with the new default
-      const sortedWatchlists = [...updatedWatchlists].sort((a, b) => {
-        if (a.is_default) return -1;
-        if (b.is_default) return 1;
-        return a.name.localeCompare(b.name);
+      // Select the watchlist to make it active
+      onSelectWatchlist({
+        ...watchlist,
+        is_default: true
       });
 
       toast.success('Default watchlist updated');
@@ -80,7 +73,7 @@ export const WatchlistList = ({
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => handleSetDefaultWatchlist(watchlist.id)}
+            onClick={() => handleSetDefaultWatchlist(watchlist)}
             className="shrink-0"
           >
             {watchlist.is_default ? (
