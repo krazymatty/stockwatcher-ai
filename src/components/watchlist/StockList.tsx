@@ -58,6 +58,13 @@ export const StockList = ({ selectedWatchlist, stocks, onStocksChanged }: StockL
     }
   };
 
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      addStock();
+    }
+  };
+
   const deleteStock = async (stockId: string) => {
     const { error } = await supabase
       .from('watchlist_stocks')
@@ -80,6 +87,7 @@ export const StockList = ({ selectedWatchlist, stocks, onStocksChanged }: StockL
           placeholder="Add ticker symbols (separate by comma or space)"
           value={newTicker}
           onChange={(e) => setNewTicker(e.target.value)}
+          onKeyDown={handleKeyPress}
         />
         <Button onClick={addStock}>
           <Plus className="mr-2 h-4 w-4" />
