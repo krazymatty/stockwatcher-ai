@@ -5,6 +5,7 @@ import { Database } from "@/integrations/supabase/types";
 import { MasterStocksList } from "@/components/admin/MasterStocksList";
 import { AddTickerForm } from "@/components/admin/AddTickerForm";
 import { UpdateMasterListButton } from "@/components/admin/UpdateMasterListButton";
+import { StockHistoricalChart } from "@/components/admin/StockHistoricalChart";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
