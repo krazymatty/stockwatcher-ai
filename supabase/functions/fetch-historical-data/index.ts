@@ -14,25 +14,34 @@ async function fetchAlphaVantageData(symbol: string) {
 
   const url = `https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=${symbol}&apikey=${apiKey}&outputsize=compact`;
   console.log('Making request to Alpha Vantage API...');
-  const response = await fetch(url);
-  const data = await response.json();
-  console.log('Alpha Vantage response:', JSON.stringify(data));
+  
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    console.log('Alpha Vantage response received');
 
-  if (data['Error Message']) {
-    throw new Error(`Alpha Vantage error: ${data['Error Message']}`);
+    if (data['Error Message']) {
+      throw new Error(`Alpha Vantage error: ${data['Error Message']}`);
+    }
+
+    if (data['Note']) {
+      throw new Error(`Alpha Vantage API limit reached: ${data['Note']}`);
+    }
+
+    if (!data['Time Series (Daily)']) {
+      console.error('Unexpected Alpha Vantage response:', data);
+      throw new Error('Invalid response from Alpha Vantage');
+    }
+
+    return data['Time Series (Daily)'];
+  } catch (error) {
+    console.error('Error fetching from Alpha Vantage:', error);
+    throw error;
   }
-
-  if (data['Note']) {
-    // This usually means we've hit the API rate limit
-    throw new Error(`Alpha Vantage API limit reached: ${data['Note']}`);
-  }
-
-  if (!data['Time Series (Daily)']) {
-    console.error('Unexpected Alpha Vantage response:', data);
-    throw new Error('Invalid response from Alpha Vantage');
-  }
-
-  return data['Time Series (Daily)'];
 }
 
 Deno.serve(async (req) => {
@@ -71,7 +80,7 @@ Deno.serve(async (req) => {
       throw updateError;
     }
 
-    // Fetch real market data
+    // Fetch market data
     const marketData = await fetchAlphaVantageData(ticker);
     
     // Transform the data for our database
@@ -86,6 +95,10 @@ Deno.serve(async (req) => {
     }));
 
     console.log(`Processed ${historicalData.length} records for ${ticker}`);
+
+    if (historicalData.length === 0) {
+      throw new Error('No historical data received from Alpha Vantage');
+    }
 
     // Insert the data into our database
     const { error: insertError } = await supabaseClient

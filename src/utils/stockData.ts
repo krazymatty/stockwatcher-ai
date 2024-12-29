@@ -11,17 +11,14 @@ export const fetchAndStoreHistoricalData = async (ticker: string) => {
 
     if (error) {
       console.error('Error fetching historical data:', error);
-      if (error.message.includes('API key')) {
-        throw new Error('Alpha Vantage API key is not configured. Please contact the administrator.');
-      }
       throw error;
     }
 
-    if (!data.success) {
-      const errorMessage = data.error || `Failed to fetch data for ${ticker}`;
+    if (!data || !data.success) {
+      const errorMessage = data?.error || `Failed to fetch data for ${ticker}`;
       console.error('API Error:', errorMessage);
-      if (errorMessage.includes('API key')) {
-        throw new Error('Alpha Vantage API key is not configured. Please contact the administrator.');
+      if (errorMessage.includes('API limit')) {
+        throw new Error('Alpha Vantage API rate limit reached. Please try again in a minute.');
       }
       throw new Error(errorMessage);
     }
