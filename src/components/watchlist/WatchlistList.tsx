@@ -39,9 +39,16 @@ export const WatchlistList = ({
     }
   };
 
+  // Sort watchlists: default first, then alphabetically
+  const sortedWatchlists = [...watchlists].sort((a, b) => {
+    if (a.is_default) return -1;
+    if (b.is_default) return 1;
+    return a.name.localeCompare(b.name);
+  });
+
   return (
     <div className="space-y-2">
-      {watchlists.map((watchlist) => (
+      {sortedWatchlists.map((watchlist) => (
         <div key={watchlist.id} className="flex items-center gap-2">
           <Button
             variant={selectedWatchlist?.id === watchlist.id ? "default" : "outline"}
