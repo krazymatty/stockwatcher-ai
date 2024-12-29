@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { widget } from '@/lib/tradingview/charting_library';
+import { supabase } from '@/integrations/supabase/client';
 
 interface TradingViewChartProps {
   ticker: string;
