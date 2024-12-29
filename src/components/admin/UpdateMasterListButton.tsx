@@ -2,8 +2,8 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@supabase/auth-helpers-react";
+import { updateMasterStocksList } from "@/utils/masterStocks";
 
 interface UpdateMasterListButtonProps {
   refetch: () => void;
@@ -21,64 +21,10 @@ export const UpdateMasterListButton = ({ refetch }: UpdateMasterListButtonProps)
 
     setIsUpdating(true);
     try {
-      // Get user's profile first to get the username
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('username')
-        .eq('id', session.user.id)
-        .single();
-
-      const username = profileData?.username || session.user.email;
-
-      // Get all unique tickers from active watchlists
-      const { data: watchlistStocks, error: fetchError } = await supabase
-        .from('watchlist_stocks')
-        .select('ticker, watchlist_id, watchlists!inner(id)')
-        .order('ticker');
-
-      if (fetchError) throw fetchError;
-
-      // Get current master stocks
-      const { data: currentMasterStocks, error: masterError } = await supabase
-        .from('master_stocks')
-        .select('ticker');
-
-      if (masterError) throw masterError;
-
-      // Create sets for easier comparison
-      const activeWatchlistTickers = new Set(watchlistStocks?.map(stock => stock.ticker));
-      const masterTickers = new Set(currentMasterStocks.map(stock => stock.ticker));
-
-      // Find tickers to add (in watchlists but not in master)
-      const tickersToAdd = [...activeWatchlistTickers].filter(ticker => !masterTickers.has(ticker));
-
-      // Find tickers to remove (in master but not in any watchlist)
-      const tickersToRemove = [...masterTickers].filter(ticker => !activeWatchlistTickers.has(ticker));
-
-      // Add new tickers
-      if (tickersToAdd.length > 0) {
-        const { error: insertError } = await supabase
-          .from('master_stocks')
-          .insert(
-            tickersToAdd.map((ticker) => ({
-              ticker,
-              user_id: session.user.id,
-              created_by_email: username
-            }))
-          );
-
-        if (insertError) throw insertError;
-      }
-
-      // Remove orphaned tickers
-      if (tickersToRemove.length > 0) {
-        const { error: deleteError } = await supabase
-          .from('master_stocks')
-          .delete()
-          .in('ticker', tickersToRemove);
-
-        if (deleteError) throw deleteError;
-      }
+      const { tickersToAdd, tickersToRemove } = await updateMasterStocksList(
+        session.user.id,
+        session.user.email!
+      );
 
       // Show appropriate toast message
       if (tickersToAdd.length === 0 && tickersToRemove.length === 0) {

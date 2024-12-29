@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Watchlist } from "@/types/watchlist";
 import { useSession } from "@supabase/auth-helpers-react";
+import { addTickerToMasterStocks } from "@/utils/masterStocks";
 
 interface TickerInputProps {
   selectedWatchlist: Watchlist;
@@ -32,15 +33,6 @@ export const TickerInput = ({ selectedWatchlist, onStocksChanged }: TickerInputP
       return;
     }
 
-    // Get user's profile first to get the username
-    const { data: profileData } = await supabase
-      .from('profiles')
-      .select('username')
-      .eq('id', session.user.id)
-      .single();
-
-    const username = profileData?.username || session.user.email;
-
     // Split the input by commas and/or spaces and filter out empty strings
     const tickers = newTicker
       .toUpperCase()
@@ -66,14 +58,11 @@ export const TickerInput = ({ selectedWatchlist, onStocksChanged }: TickerInputP
       }
 
       try {
-        // First, try to add to master_stocks if it doesn't exist
-        const { error: masterStocksError } = await supabase
-          .from('master_stocks')
-          .upsert({ 
-            ticker,
-            user_id: session.user.id,
-            created_by_email: username
-          });
+        const { error: masterStocksError } = await addTickerToMasterStocks(
+          ticker,
+          session.user.id,
+          session.user.email!
+        );
 
         if (masterStocksError) {
           console.error("Error adding to master_stocks:", masterStocksError);
