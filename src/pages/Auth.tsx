@@ -49,10 +49,6 @@ const AuthPage = () => {
             providers={["google"]}
             redirectTo={`${window.location.origin}/auth`}
             theme="light"
-            onError={(error) => {
-              console.error("Auth error:", error);
-              toast.error(error.message);
-            }}
           />
         </div>
       </div>
