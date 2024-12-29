@@ -14,8 +14,22 @@ export const UpdateMasterListButton = ({ refetch }: UpdateMasterListButtonProps)
   const session = useSession();
 
   const handleUpdateMasterList = async () => {
+    if (!session?.user) {
+      toast.error("Please sign in to update the master list");
+      return;
+    }
+
     setIsUpdating(true);
     try {
+      // Get user's profile first to get the username
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('username')
+        .eq('id', session.user.id)
+        .single();
+
+      const username = profileData?.username || session.user.email;
+
       // Get all unique tickers from active watchlists
       const { data: watchlistStocks, error: fetchError } = await supabase
         .from('watchlist_stocks')
@@ -48,8 +62,8 @@ export const UpdateMasterListButton = ({ refetch }: UpdateMasterListButtonProps)
           .insert(
             tickersToAdd.map((ticker) => ({
               ticker,
-              user_id: session?.user?.id,
-              created_by_email: session?.user?.email
+              user_id: session.user.id,
+              created_by_email: username
             }))
           );
 
