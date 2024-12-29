@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from "sonner";
 
@@ -9,56 +9,50 @@ interface TradingViewChartProps {
 export const TradingViewChart = ({ ticker }: TradingViewChartProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const widgetRef = useRef<any>(null);
+  const [isScriptLoaded, setIsScriptLoaded] = useState(false);
 
   useEffect(() => {
     const loadTradingViewLibrary = async () => {
-      if (!containerRef.current) {
-        console.warn('Container not ready');
+      if (typeof window.TradingView !== 'undefined') {
+        setIsScriptLoaded(true);
         return;
       }
 
       try {
-        // Check if TradingView is already loaded
-        if (!window.TradingView) {
-          console.log('Loading TradingView library...');
-          // Create script element
-          const script = document.createElement('script');
-          script.src = 'https://s3.tradingview.com/tv.js';
-          script.async = true;
-          script.onload = () => {
-            if (containerRef.current) {
-              initializeWidget();
-            }
-          };
-          script.onerror = () => {
-            console.error('Failed to load TradingView library');
-            toast.error('Failed to load chart library');
-          };
-          document.head.appendChild(script);
-        } else {
-          initializeWidget();
-        }
+        console.log('Loading TradingView library...');
+        const script = document.createElement('script');
+        script.src = 'https://s3.tradingview.com/tv.js';
+        script.async = true;
+        script.onload = () => setIsScriptLoaded(true);
+        script.onerror = () => {
+          console.error('Failed to load TradingView library');
+          toast.error('Failed to load chart library');
+        };
+        document.head.appendChild(script);
       } catch (error) {
         console.error('Error loading TradingView:', error);
         toast.error('Error initializing chart');
       }
     };
 
+    loadTradingViewLibrary();
+  }, []); // Load script only once
+
+  useEffect(() => {
+    if (!isScriptLoaded || !containerRef.current || !window.TradingView) {
+      return;
+    }
+
     const initializeWidget = () => {
-      if (!window.TradingView || !containerRef.current) {
-        console.error('TradingView library or container not available');
-        return;
-      }
-
-      // Clean up previous widget instance if it exists
-      if (widgetRef.current) {
-        widgetRef.current.remove();
-        widgetRef.current = null;
-      }
-
-      console.log('Initializing TradingView widget for ticker:', ticker);
-      
       try {
+        // Clean up previous widget instance if it exists
+        if (widgetRef.current) {
+          widgetRef.current.remove();
+          widgetRef.current = null;
+        }
+
+        console.log('Initializing TradingView widget for ticker:', ticker);
+        
         widgetRef.current = new window.TradingView.widget({
           symbol: ticker,
           container: containerRef.current,
@@ -144,18 +138,23 @@ export const TradingViewChart = ({ ticker }: TradingViewChartProps) => {
       }
     };
 
-    loadTradingViewLibrary();
+    // Initialize widget with a small delay to ensure container is ready
+    const timeoutId = setTimeout(initializeWidget, 100);
 
-    // Cleanup function
     return () => {
+      clearTimeout(timeoutId);
       if (widgetRef.current) {
         widgetRef.current.remove();
         widgetRef.current = null;
       }
     };
-  }, [ticker]);
+  }, [ticker, isScriptLoaded]); // Re-run when ticker changes or script loads
 
   return (
-    <div ref={containerRef} style={{ width: '100%', height: '600px' }} />
+    <div 
+      ref={containerRef} 
+      style={{ width: '100%', height: '600px' }} 
+      className="border rounded-lg overflow-hidden"
+    />
   );
 };
