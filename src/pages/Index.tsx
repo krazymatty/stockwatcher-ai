@@ -15,46 +15,59 @@ const Index = () => {
   const fetchWatchlists = async () => {
     if (!session?.user?.id) return;
 
-    const { data: watchlistsData, error: watchlistsError } = await supabase
-      .from('watchlists')
-      .select('*, profiles!watchlists_user_id_fkey(default_watchlist_id)')
-      .eq('user_id', session.user.id)
-      .order('created_at');
+    try {
+      const { data: watchlistsData, error: watchlistsError } = await supabase
+        .from('watchlists')
+        .select(`
+          *,
+          profiles!watchlists_user_id_fkey_profiles (
+            default_watchlist_id
+          )
+        `)
+        .eq('user_id', session.user.id)
+        .order('created_at');
 
-    if (watchlistsError) {
-      console.error('Error fetching watchlists:', watchlistsError);
-      return;
-    }
+      if (watchlistsError) {
+        console.error('Error fetching watchlists:', watchlistsError);
+        return;
+      }
 
-    // Transform the data to include is_default flag
-    const transformedWatchlists = watchlistsData.map(watchlist => ({
-      ...watchlist,
-      is_default: watchlist.profiles?.[0]?.default_watchlist_id === watchlist.id
-    }));
+      // Transform the data to include is_default flag
+      const transformedWatchlists = watchlistsData.map(watchlist => ({
+        ...watchlist,
+        is_default: watchlist.profiles?.[0]?.default_watchlist_id === watchlist.id
+      }));
 
-    setWatchlists(transformedWatchlists);
+      setWatchlists(transformedWatchlists);
 
-    // If there's no selected watchlist, select the default one or the first one
-    if (!selectedWatchlist) {
-      const defaultWatchlist = transformedWatchlists.find(w => w.is_default);
-      setSelectedWatchlist(defaultWatchlist || transformedWatchlists[0] || null);
+      // If there's no selected watchlist, select the default one or the first one
+      if (!selectedWatchlist) {
+        const defaultWatchlist = transformedWatchlists.find(w => w.is_default);
+        setSelectedWatchlist(defaultWatchlist || transformedWatchlists[0] || null);
+      }
+    } catch (error) {
+      console.error('Error in fetchWatchlists:', error);
     }
   };
 
   const fetchStocks = async () => {
     if (!selectedWatchlist) return;
 
-    const { data: stocksData, error: stocksError } = await supabase
-      .from('watchlist_stocks')
-      .select('*')
-      .eq('watchlist_id', selectedWatchlist.id);
+    try {
+      const { data: stocksData, error: stocksError } = await supabase
+        .from('watchlist_stocks')
+        .select('*')
+        .eq('watchlist_id', selectedWatchlist.id);
 
-    if (stocksError) {
-      console.error('Error fetching stocks:', stocksError);
-      return;
+      if (stocksError) {
+        console.error('Error fetching stocks:', stocksError);
+        return;
+      }
+
+      setStocks(stocksData);
+    } catch (error) {
+      console.error('Error in fetchStocks:', error);
     }
-
-    setStocks(stocksData);
   };
 
   useEffect(() => {
