@@ -66,7 +66,11 @@ export const MasterStocksList = ({ stocks, refetch }: MasterStocksListProps) => 
       );
     } catch (error) {
       console.error(`Error updating ${ticker}:`, error);
-      toast.error(`Failed to update ${ticker}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      toast.error(errorMessage.includes('API key') 
+        ? 'API key not configured. Please contact the administrator.' 
+        : `Failed to update ${ticker}: ${errorMessage}`
+      );
     } finally {
       setIsUpdating(prev => ({ ...prev, [ticker]: false }));
     }
