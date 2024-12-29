@@ -5,49 +5,27 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-interface InstrumentInfo {
-  type: 'stock' | 'etf' | 'future' | 'forex' | 'option' | 'crypto';
-  symbol: string;
-  displayName?: string;
-  basePrice?: number;
-}
-
-const ETF_BASE_PRICES: Record<string, number> = {
-  'SPY': 595.01,  // Current SPY price
-  'QQQ': 409.52,  // Current QQQ price
-  'IWM': 201.94,  // Current IWM price
-  'DIA': 376.61,  // Current DIA price
-  'VTI': 239.23   // Current VTI price
-};
-
-async function validateAndIdentifyInstrument(symbol: string): Promise<InstrumentInfo> {
-  // Common ETFs with their current prices
-  const commonEtfs = Object.keys(ETF_BASE_PRICES);
-  
-  if (symbol.startsWith('/')) {
-    return {
-      type: 'future',
-      symbol,
-      displayName: `Futures: ${symbol}`,
-      basePrice: 4500
-    };
+async function fetchAlphaVantageData(symbol: string) {
+  console.log(`Fetching Alpha Vantage data for ${symbol}`);
+  const apiKey = Deno.env.get('ALPHA_VANTAGE_API_KEY');
+  if (!apiKey) {
+    throw new Error('ALPHA_VANTAGE_API_KEY is not set');
   }
-  
-  if (commonEtfs.includes(symbol.toUpperCase())) {
-    return {
-      type: 'etf',
-      symbol: symbol.toUpperCase(),
-      displayName: `ETF: ${symbol.toUpperCase()}`,
-      basePrice: ETF_BASE_PRICES[symbol.toUpperCase()]
-    };
+
+  const url = `https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=${symbol}&apikey=${apiKey}&outputsize=compact`;
+  const response = await fetch(url);
+  const data = await response.json();
+
+  if (data['Error Message']) {
+    throw new Error(`Alpha Vantage error: ${data['Error Message']}`);
   }
-  
-  return {
-    type: 'stock',
-    symbol: symbol.toUpperCase(),
-    displayName: `Stock: ${symbol.toUpperCase()}`,
-    basePrice: 100 + Math.random() * 100
-  };
+
+  if (!data['Time Series (Daily)']) {
+    console.error('Unexpected Alpha Vantage response:', data);
+    throw new Error('Invalid response from Alpha Vantage');
+  }
+
+  return data['Time Series (Daily)'];
 }
 
 Deno.serve(async (req) => {
@@ -61,20 +39,22 @@ Deno.serve(async (req) => {
       throw new Error('Ticker is required')
     }
 
-    console.log(`Validating and fetching data for ${ticker}`)
-    
-    const instrumentInfo = await validateAndIdentifyInstrument(ticker);
+    console.log(`Fetching data for ${ticker}`);
     
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
+
+    // Determine if it's an ETF
+    const isETF = ['SPY', 'QQQ', 'IWM', 'DIA', 'VTI'].includes(ticker.toUpperCase());
     
+    // Update master_stocks table with instrument type
     const { error: updateError } = await supabaseClient
       .from('master_stocks')
       .update({
-        instrument_type: instrumentInfo.type,
-        display_name: instrumentInfo.displayName,
+        instrument_type: isETF ? 'etf' : 'stock',
+        display_name: `${isETF ? 'ETF' : 'Stock'}: ${ticker.toUpperCase()}`,
         metadata: { validated: true }
       })
       .eq('ticker', ticker);
@@ -84,13 +64,26 @@ Deno.serve(async (req) => {
       throw updateError;
     }
 
-    const mockData = generateMockHistoricalData(ticker, instrumentInfo);
+    // Fetch real market data
+    const marketData = await fetchAlphaVantageData(ticker);
     
+    // Transform the data for our database
+    const historicalData = Object.entries(marketData).map(([date, values]: [string, any]) => ({
+      ticker,
+      date,
+      open: Number(values['1. open']),
+      high: Number(values['2. high']),
+      low: Number(values['3. low']),
+      close: Number(values['4. close']),
+      volume: Number(values['5. volume'])
+    }));
+
+    // Insert the data into our database
     const { error: insertError } = await supabaseClient
       .from('stock_historical_data')
-      .upsert(mockData, { 
+      .upsert(historicalData, {
         onConflict: 'ticker,date',
-        ignoreDuplicates: true 
+        ignoreDuplicates: false // We want to update existing records
       });
 
     if (insertError) {
@@ -99,78 +92,28 @@ Deno.serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ 
-        success: true, 
-        count: mockData.length,
-        instrumentInfo 
+      JSON.stringify({
+        success: true,
+        count: historicalData.length,
+        lastPrice: historicalData[0]?.close
       }),
-      { 
+      {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200 
+        status: 200
       }
     );
+
   } catch (error) {
     console.error('Error:', error);
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         error: error.message,
         ticker: error.ticker || null
       }),
-      { 
+      {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400 
+        status: 400
       }
     );
   }
 });
-
-function generateMockHistoricalData(ticker: string, instrumentInfo: InstrumentInfo) {
-  const data = [];
-  const today = new Date();
-  
-  // Use the provided base price or fallback to defaults
-  let basePrice = instrumentInfo.basePrice || 100;
-  let volatility = 0.02;
-  
-  switch (instrumentInfo.type) {
-    case 'future':
-      volatility = 0.03; // Higher volatility for futures
-      break;
-    case 'etf':
-      volatility = 0.015; // Lower volatility for ETFs
-      break;
-    default:
-      volatility = 0.02;
-  }
-  
-  // Generate historical data starting from the base price
-  for (let i = 0; i < 30; i++) {
-    const date = new Date(today);
-    date.setDate(date.getDate() - i);
-    
-    // For the most recent day (i=0), use exactly the base price for ETFs
-    const isETF = instrumentInfo.type === 'etf';
-    const isLatestDay = i === 0;
-    
-    const dayClose = isETF && isLatestDay 
-      ? basePrice 
-      : basePrice * (1 + (Math.random() - 0.5) * volatility);
-      
-    data.push({
-      ticker,
-      date: date.toISOString().split('T')[0],
-      open: basePrice * (1 + (Math.random() - 0.5) * volatility),
-      high: Math.max(dayClose, basePrice * (1 + Math.random() * volatility)),
-      low: Math.min(dayClose, basePrice * (1 - Math.random() * volatility)),
-      close: dayClose,
-      volume: Math.floor(Math.random() * 1000000) + 100000
-    });
-    
-    // Update base price for next day (going backwards in time)
-    if (!isLatestDay) {
-      basePrice *= (1 + (Math.random() - 0.5) * volatility);
-    }
-  }
-  
-  return data;
-}
