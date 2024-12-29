@@ -21,7 +21,15 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     const checkSession = async () => {
       try {
         const { data: { session }, error } = await supabase.auth.getSession();
-        if (error) throw error;
+        if (error) {
+          console.error("Session check error:", error);
+          if (mounted) {
+            setIsAuthenticated(false);
+            setIsLoading(false);
+          }
+          return;
+        }
+        
         if (mounted) {
           setIsAuthenticated(!!session);
           setIsLoading(false);
@@ -35,17 +43,26 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
       }
     };
 
+    // Initial session check
     checkSession();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    // Subscribe to auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log("Auth state changed:", event, session);
       
       if (mounted) {
         if (event === 'SIGNED_OUT') {
           setIsAuthenticated(false);
-          queryClient.clear(); // Clear query cache on logout
+          queryClient.clear();
         } else if (event === 'SIGNED_IN' && session) {
-          setIsAuthenticated(true);
+          // Verify the session is valid
+          const { data, error } = await supabase.auth.getUser();
+          if (!error && data.user) {
+            setIsAuthenticated(true);
+          } else {
+            console.error("Session verification failed:", error);
+            setIsAuthenticated(false);
+          }
         }
         setIsLoading(false);
       }
@@ -58,7 +75,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   if (isLoading) {
-    return <div>Loading...</div>;
+    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
   }
 
   return isAuthenticated ? <>{children}</> : <Navigate to="/auth" replace />;
