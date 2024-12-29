@@ -11,6 +11,7 @@ import { User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useSession, useSupabaseClient } from "@supabase/auth-helpers-react";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 export const AppLayout = ({ children }: { children: React.ReactNode }) => {
   const navigate = useNavigate();
@@ -28,7 +29,7 @@ export const AppLayout = ({ children }: { children: React.ReactNode }) => {
   const getProfile = async () => {
     try {
       console.log("Fetching profile for user:", session?.user?.id);
-      const { data, error } = await supabase
+      const { data: profile, error } = await supabase
         .from("profiles")
         .select("avatar_url")
         .eq("id", session?.user?.id)
@@ -39,12 +40,31 @@ export const AppLayout = ({ children }: { children: React.ReactNode }) => {
         throw error;
       }
       
-      console.log("Profile data:", data);
-      if (data) {
-        setAvatarUrl(data.avatar_url);
+      console.log("Profile data:", profile);
+
+      // If no avatar_url is set but Google avatar is available, update it
+      if (!profile.avatar_url && session?.user?.user_metadata?.picture) {
+        const { error: updateError } = await supabase
+          .from("profiles")
+          .update({ 
+            avatar_url: session.user.user_metadata.picture,
+            updated_at: new Date().toISOString()
+          })
+          .eq("id", session?.user?.id);
+
+        if (updateError) {
+          console.error("Error updating avatar:", updateError);
+          throw updateError;
+        }
+
+        setAvatarUrl(session.user.user_metadata.picture);
+        toast.success("Profile avatar updated");
+      } else {
+        setAvatarUrl(profile.avatar_url);
       }
     } catch (error) {
       console.error("Error loading avatar:", error);
+      toast.error("Error loading avatar");
     }
   };
 
