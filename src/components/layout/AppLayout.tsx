@@ -20,19 +20,26 @@ export const AppLayout = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     if (session?.user) {
+      console.log("Current user ID:", session.user.id);
       getProfile();
     }
   }, [session]);
 
   const getProfile = async () => {
     try {
+      console.log("Fetching profile for user:", session?.user?.id);
       const { data, error } = await supabase
         .from("profiles")
         .select("avatar_url")
         .eq("id", session?.user?.id)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching profile:", error);
+        throw error;
+      }
+      
+      console.log("Profile data:", data);
       if (data) {
         setAvatarUrl(data.avatar_url);
       }
