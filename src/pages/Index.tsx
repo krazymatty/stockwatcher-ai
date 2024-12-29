@@ -3,7 +3,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { WatchlistCreate } from "@/components/watchlist/WatchlistCreate";
 import { WatchlistList } from "@/components/watchlist/WatchlistList";
@@ -11,7 +10,6 @@ import { StockList } from "@/components/watchlist/StockList";
 import { Watchlist, WatchlistStock } from "@/types/watchlist";
 
 const Index = () => {
-  const navigate = useNavigate();
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [watchlists, setWatchlists] = useState<Watchlist[]>([]);
   const [selectedWatchlist, setSelectedWatchlist] = useState<Watchlist | null>(null);
@@ -27,30 +25,34 @@ const Index = () => {
   }, []);
 
   const fetchWatchlists = async () => {
-    const { data, error } = await supabase
-      .from('watchlists')
-      .select('*')
-      .order('created_at', { ascending: false });
+    try {
+      const { data, error } = await supabase
+        .from('watchlists')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-    if (error) {
+      if (error) throw error;
+      setWatchlists(data || []);
+    } catch (error) {
+      console.error("Error fetching watchlists:", error);
       toast.error("Error fetching watchlists");
-      return;
     }
-    setWatchlists(data);
   };
 
   const fetchStocks = async (watchlistId: string) => {
-    const { data, error } = await supabase
-      .from('watchlist_stocks')
-      .select('*')
-      .eq('watchlist_id', watchlistId)
-      .order('created_at', { ascending: false });
+    try {
+      const { data, error } = await supabase
+        .from('watchlist_stocks')
+        .select('*')
+        .eq('watchlist_id', watchlistId)
+        .order('created_at', { ascending: false });
 
-    if (error) {
+      if (error) throw error;
+      setStocks(data || []);
+    } catch (error) {
+      console.error("Error fetching stocks:", error);
       toast.error("Error fetching stocks");
-      return;
     }
-    setStocks(data);
   };
 
   useEffect(() => {
@@ -61,8 +63,8 @@ const Index = () => {
 
   const handleSignOut = async () => {
     try {
-      await supabase.auth.signOut();
-      // The ProtectedRoute component will handle the navigation
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
     } catch (error) {
       console.error("Sign out error:", error);
       toast.error("Error signing out");
