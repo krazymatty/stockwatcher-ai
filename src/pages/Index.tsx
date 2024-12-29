@@ -20,19 +20,35 @@ const Index = () => {
   useEffect(() => {
     const getUserEmail = async () => {
       const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        navigate("/auth");
+        return;
+      }
       setUserEmail(user?.email || null);
     };
     getUserEmail();
     fetchWatchlists();
-  }, []);
 
-  useEffect(() => {
-    if (selectedWatchlist) {
-      fetchStocks(selectedWatchlist.id);
-    }
-  }, [selectedWatchlist]);
+    // Set up auth state change listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log("Auth state changed:", event, session);
+      if (event === 'SIGNED_OUT' || !session) {
+        navigate("/auth");
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [navigate]);
 
   const fetchWatchlists = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      navigate("/auth");
+      return;
+    }
+
     const { data, error } = await supabase
       .from('watchlists')
       .select('*')
@@ -46,6 +62,12 @@ const Index = () => {
   };
 
   const fetchStocks = async (watchlistId: string) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      navigate("/auth");
+      return;
+    }
+
     const { data, error } = await supabase
       .from('watchlist_stocks')
       .select('*')
@@ -59,15 +81,25 @@ const Index = () => {
     setStocks(data);
   };
 
-  const handleSignOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      toast.error("Error signing out");
-      console.error("Sign out error:", error);
-      return;
+  useEffect(() => {
+    if (selectedWatchlist) {
+      fetchStocks(selectedWatchlist.id);
     }
-    navigate("/auth");
-    toast.success("Signed out successfully");
+  }, [selectedWatchlist]);
+
+  const handleSignOut = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error("Sign out error:", error);
+        toast.error("Error signing out");
+        return;
+      }
+      // The navigation will be handled by the auth state change listener
+    } catch (error) {
+      console.error("Sign out error:", error);
+      toast.error("Error signing out");
+    }
   };
 
   return (
