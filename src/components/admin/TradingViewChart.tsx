@@ -14,7 +14,6 @@ export const TradingViewChart = ({ ticker }: TradingViewChartProps) => {
 
     const widgetOptions = {
       symbol: ticker,
-      // TradingView Widget parameters
       container: containerRef.current,
       datafeed: {
         onReady: (callback: any) => {
