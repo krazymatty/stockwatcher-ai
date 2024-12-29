@@ -16,9 +16,9 @@ export const TradingViewChart = ({ ticker }: TradingViewChartProps) => {
 
   useEffect(() => {
     let timeoutId: NodeJS.Timeout;
+    let isComponentMounted = true;
 
     const initializeWidget = () => {
-      // Only proceed if script is loaded and container is ready
       if (!isScriptLoaded || !containerRef.current || !window.TradingView) {
         return;
       }
@@ -36,13 +36,13 @@ export const TradingViewChart = ({ ticker }: TradingViewChartProps) => {
       try {
         console.log('Initializing TradingView widget for ticker:', ticker);
         
-        // Create a unique container ID
         const containerId = `tv_chart_${Date.now()}`;
-        containerRef.current.id = containerId;
+        if (containerRef.current) {
+          containerRef.current.id = containerId;
+        }
         
-        // Wait a bit to ensure DOM is fully ready
         timeoutId = setTimeout(() => {
-          if (!containerRef.current) return;
+          if (!isComponentMounted || !containerRef.current) return;
           
           widgetRef.current = new window.TradingView.widget({
             symbol: ticker,
@@ -68,16 +68,23 @@ export const TradingViewChart = ({ ticker }: TradingViewChartProps) => {
     initializeWidget();
 
     return () => {
+      isComponentMounted = false;
       if (timeoutId) {
         clearTimeout(timeoutId);
       }
+      
+      // Safe cleanup of the widget
       if (widgetRef.current) {
         try {
-          widgetRef.current.remove();
-          widgetRef.current = null;
+          // Check if the container still exists before removing
+          if (containerRef.current && containerRef.current.parentNode) {
+            widgetRef.current.remove();
+          }
         } catch (error) {
-          console.error('Error cleaning up widget:', error);
+          // Silently handle cleanup errors as the component is being unmounted
+          console.debug('Widget cleanup skipped:', error);
         }
+        widgetRef.current = null;
       }
     };
   }, [ticker, isScriptLoaded, fetchBars]);
