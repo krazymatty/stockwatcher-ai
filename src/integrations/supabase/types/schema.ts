@@ -1,11 +1,11 @@
 import { Tables } from './tables';
 
-export type Schema = {
+export interface Schema {
   public: {
     Tables: Tables;
-    Views: {};
-    Functions: {};
-    Enums: {};
-    CompositeTypes: {};
+    Views: Record<string, never>;
+    Functions: Record<string, never>;
+    Enums: Record<string, never>;
+    CompositeTypes: Record<string, never>;
   };
-};
+}

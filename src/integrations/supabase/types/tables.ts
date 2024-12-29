@@ -1,4 +1,4 @@
-export type Tables = {
+export interface Tables {
   master_stocks: {
     Row: {
       created_at: string;
@@ -91,4 +91,4 @@ export type Tables = {
     };
     Relationships: [];
   };
-};
+}

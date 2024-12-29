@@ -1,6 +1,8 @@
-export type { Schema } from './schema';
-export type { Tables } from './tables';
-export type { TableRow, TableInsert, TableUpdate } from './utils';
+import type { Schema } from './schema';
+import type { Tables } from './tables';
+import type { TableRow, TableInsert, TableUpdate } from './utils';
+
+export type { Schema, Tables, TableRow, TableInsert, TableUpdate };
 
 export type Json =
   | string
