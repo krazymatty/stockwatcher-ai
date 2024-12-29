@@ -5,6 +5,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Watchlist } from "@/types/watchlist";
+import { useSession } from "@supabase/auth-helpers-react";
 
 interface TickerInputProps {
   selectedWatchlist: Watchlist;
@@ -13,8 +14,14 @@ interface TickerInputProps {
 
 export const TickerInput = ({ selectedWatchlist, onStocksChanged }: TickerInputProps) => {
   const [newTicker, setNewTicker] = useState("");
+  const session = useSession();
 
   const addStock = async () => {
+    if (!session) {
+      toast.error("Please sign in to add stocks");
+      return;
+    }
+
     if (!selectedWatchlist) {
       toast.error("Please select a watchlist first");
       return;
@@ -49,18 +56,31 @@ export const TickerInput = ({ selectedWatchlist, onStocksChanged }: TickerInputP
         continue;
       }
 
-      const { error } = await supabase
-        .from('watchlist_stocks')
-        .insert({
-          watchlist_id: selectedWatchlist.id,
-          ticker: ticker
-        });
+      try {
+        // First, try to add to master_stocks if it doesn't exist
+        await supabase
+          .from('master_stocks')
+          .upsert({ ticker }, { onConflict: 'ticker' });
 
-      if (error) {
+        // Then add to watchlist_stocks
+        const { error } = await supabase
+          .from('watchlist_stocks')
+          .insert({
+            watchlist_id: selectedWatchlist.id,
+            ticker: ticker
+          });
+
+        if (error) {
+          console.error("Error adding stock:", error);
+          hasError = true;
+          toast.error(`Error adding ${ticker}`);
+        } else {
+          addedCount++;
+        }
+      } catch (error) {
+        console.error("Error in stock addition process:", error);
         hasError = true;
-        toast.error(`Error adding ${ticker}`);
-      } else {
-        addedCount++;
+        toast.error(`Error processing ${ticker}`);
       }
     }
 
