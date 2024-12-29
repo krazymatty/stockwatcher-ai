@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useSession } from "@supabase/auth-helpers-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Watchlist, WatchlistStock } from "@/types/watchlist";
@@ -7,101 +7,88 @@ import { WatchlistList } from "@/components/watchlist/WatchlistList";
 import { StockList } from "@/components/watchlist/StockList";
 
 const Index = () => {
-  const session = useSession();
   const [watchlists, setWatchlists] = useState<Watchlist[]>([]);
   const [selectedWatchlist, setSelectedWatchlist] = useState<Watchlist | null>(null);
   const [stocks, setStocks] = useState<WatchlistStock[]>([]);
+  const session = useSession();
 
   const fetchWatchlists = async () => {
-    try {
-      // First, get the user's default watchlist ID
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('default_watchlist_id')
-        .eq('id', session?.user?.id)
-        .single();
+    if (!session?.user?.id) return;
 
-      // Then fetch all watchlists
-      const { data: watchlistsData, error: watchlistsError } = await supabase
-        .from('watchlists')
-        .select('*')
-        .eq('user_id', session?.user?.id)
-        .order('created_at');
+    const { data: watchlistsData, error: watchlistsError } = await supabase
+      .from('watchlists')
+      .select('*, profiles!watchlists_user_id_fkey(default_watchlist_id)')
+      .eq('user_id', session.user.id)
+      .order('created_at');
 
-      if (watchlistsError) throw watchlistsError;
+    if (watchlistsError) {
+      console.error('Error fetching watchlists:', watchlistsError);
+      return;
+    }
 
-      // Mark default watchlist
-      const watchlistsWithDefault = watchlistsData?.map(watchlist => ({
-        ...watchlist,
-        is_default: watchlist.id === profileData?.default_watchlist_id
-      })) || [];
+    // Transform the data to include is_default flag
+    const transformedWatchlists = watchlistsData.map(watchlist => ({
+      ...watchlist,
+      is_default: watchlist.profiles?.[0]?.default_watchlist_id === watchlist.id
+    }));
 
-      setWatchlists(watchlistsWithDefault);
+    setWatchlists(transformedWatchlists);
 
-      // Select default watchlist or first watchlist
-      const defaultWatchlist = watchlistsWithDefault.find(w => w.is_default) || watchlistsWithDefault[0];
-      if (defaultWatchlist && !selectedWatchlist) {
-        setSelectedWatchlist(defaultWatchlist);
-        fetchStocks(defaultWatchlist.id);
-      }
-    } catch (error) {
-      console.error('Error fetching watchlists:', error);
+    // If there's no selected watchlist, select the default one or the first one
+    if (!selectedWatchlist) {
+      const defaultWatchlist = transformedWatchlists.find(w => w.is_default);
+      setSelectedWatchlist(defaultWatchlist || transformedWatchlists[0] || null);
     }
   };
 
-  const fetchStocks = async (watchlistId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('watchlist_stocks')
-        .select('*')
-        .eq('watchlist_id', watchlistId)
-        .order('created_at');
+  const fetchStocks = async () => {
+    if (!selectedWatchlist) return;
 
-      if (error) throw error;
-      setStocks(data || []);
-    } catch (error) {
-      console.error('Error fetching stocks:', error);
+    const { data: stocksData, error: stocksError } = await supabase
+      .from('watchlist_stocks')
+      .select('*')
+      .eq('watchlist_id', selectedWatchlist.id);
+
+    if (stocksError) {
+      console.error('Error fetching stocks:', stocksError);
+      return;
     }
+
+    setStocks(stocksData);
   };
 
   useEffect(() => {
-    if (session?.user) {
-      fetchWatchlists();
-    }
-  }, [session?.user]);
-
-  const handleWatchlistSelect = (watchlist: Watchlist) => {
-    setSelectedWatchlist(watchlist);
-    fetchStocks(watchlist.id);
-  };
-
-  const handleWatchlistsChanged = () => {
     fetchWatchlists();
-  };
+  }, [session?.user?.id]);
 
-  const handleStocksChanged = () => {
-    if (selectedWatchlist) {
-      fetchStocks(selectedWatchlist.id);
-    }
-  };
+  useEffect(() => {
+    fetchStocks();
+  }, [selectedWatchlist]);
 
   return (
-    <div className="container mx-auto py-8">
-      <div className="grid grid-cols-1 md:grid-cols-[300px_1fr] gap-8">
-        <div className="space-y-4">
-          <WatchlistCreate onWatchlistCreated={handleWatchlistsChanged} />
+    <div className="container mx-auto p-4">
+      <div className="flex flex-col md:flex-row gap-8">
+        {/* Left column - Watchlists */}
+        <div className="w-full md:w-1/3 space-y-4">
+          <h2 className="text-2xl font-bold mb-4">Watchlists</h2>
+          <WatchlistCreate onWatchlistCreated={fetchWatchlists} />
           <WatchlistList
             watchlists={watchlists}
             selectedWatchlist={selectedWatchlist}
-            onSelectWatchlist={handleWatchlistSelect}
-            onWatchlistDeleted={handleWatchlistsChanged}
+            onSelectWatchlist={setSelectedWatchlist}
+            onWatchlistDeleted={fetchWatchlists}
           />
         </div>
-        <StockList
-          selectedWatchlist={selectedWatchlist}
-          stocks={stocks}
-          onStocksChanged={handleStocksChanged}
-        />
+
+        {/* Right column - Stocks */}
+        <div className="w-full md:w-2/3 space-y-4">
+          <h2 className="text-2xl font-bold mb-4">Stocks</h2>
+          <StockList
+            selectedWatchlist={selectedWatchlist}
+            stocks={stocks}
+            onStocksChanged={fetchStocks}
+          />
+        </div>
       </div>
     </div>
   );
