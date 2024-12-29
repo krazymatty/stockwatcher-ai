@@ -1,29 +1,7 @@
-declare module '@/lib/tradingview/charting_library' {
-  export interface ChartingLibraryWidgetOptions {
-    symbol?: string;
-    interval?: string;
-    libraryPath?: string;
-    chartsStorageUrl?: string;
-    chartsStorageApiVersion?: '1.1' | '1.0' | '2.0';
-    clientId?: string;
-    userId?: string;
-    fullscreen?: boolean;
-    autosize?: boolean;
-    studiesOverrides?: Record<string, any>;
-    container?: HTMLElement;
-    datafeed?: any;
-    library_path?: string;
-    locale?: string;
-    disabled_features?: string[];
-    enabled_features?: string[];
-    charts_storage_url?: string;
-    client_id?: string;
-    user_id?: string;
-    theme?: string;
-  }
+import { ChartingLibraryWidget, ChartingLibraryWidgetOptions } from './types';
 
-  export class widget {
-    constructor(options: ChartingLibraryWidgetOptions);
-    remove(): void;
-  }
-}
+// @ts-ignore - TradingView library will be loaded from CDN
+declare const TradingView: { widget: ChartingLibraryWidget };
+
+export const widget = TradingView.widget;
+export type { ChartingLibraryWidgetOptions };
