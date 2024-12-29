@@ -1,15 +1,13 @@
-import { Auth } from "@supabase/auth-ui-react";
-import { ThemeSupa } from "@supabase/auth-ui-shared";
 import { useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 
 const AuthPage = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check if user is already logged in
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       console.log("Auth state changed:", event, session);
       if (session) {
@@ -27,8 +25,6 @@ const AuthPage = () => {
         console.log("Sign out event:", event);
       } else if (event === "USER_UPDATED") {
         console.log("User updated:", session);
-      } else if (event === "USER_DELETED") {
-        console.log("User deleted:", event);
       } else if (event === "PASSWORD_RECOVERY") {
         console.log("Password recovery event:", event);
       }
@@ -50,6 +46,25 @@ const AuthPage = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
+  const handleGoogleSignIn = async () => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth`
+        }
+      });
+      
+      if (error) {
+        console.error("Sign in error:", error);
+        toast.error(error.message);
+      }
+    } catch (error) {
+      console.error("Unexpected error during sign in:", error);
+      toast.error("An unexpected error occurred");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-md space-y-4">
@@ -58,13 +73,13 @@ const AuthPage = () => {
           <p className="text-muted-foreground">Sign in to manage your watchlists</p>
         </div>
         <div className="bg-card p-6 rounded-lg shadow-lg">
-          <Auth
-            supabaseClient={supabase}
-            appearance={{ theme: ThemeSupa }}
-            providers={["google"]}
-            redirectTo={`${window.location.origin}/auth`}
-            theme="light"
-          />
+          <Button 
+            onClick={handleGoogleSignIn}
+            className="w-full"
+            variant="outline"
+          >
+            Sign in with Google
+          </Button>
         </div>
       </div>
     </div>
