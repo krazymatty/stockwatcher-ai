@@ -1,15 +1,4 @@
-import type { Schema } from './schema';
-import type { Tables } from './tables';
-import type { TableRow, TableInsert, TableUpdate } from './utils';
-
-export type { Schema, Tables, TableRow, TableInsert, TableUpdate };
-
-export type Json =
-  | string
-  | number
-  | boolean
-  | null
-  | { [key: string]: Json | undefined }
-  | Json[];
-
-export type Database = Schema;
+export * from './database.types';
+export * from './tables.types';
+export * from './functions.types';
+export * from './utils.types';
