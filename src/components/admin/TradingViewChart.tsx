@@ -38,11 +38,9 @@ export const TradingViewChart = ({ ticker }: TradingViewChartProps) => {
           library_path: 'https://s3.tradingview.com/tv.js',
           interval: 'D',
           locale: 'en',
-          disabled_features: ['header_symbol_search'],
+          disabled_features: ['header_symbol_search', 'header_symbol_search'],
           enabled_features: [],
-          charts_storage_url: undefined,
-          client_id: undefined,
-          user_id: undefined
+          allow_symbol_change: false
         });
       } catch (error) {
         console.error('Error initializing TradingView widget:', error);
