@@ -16,9 +16,21 @@ const AuthPage = () => {
         navigate("/");
       }
       
-      // Log any auth errors
       if (event === "SIGNED_OUT") {
         toast.error("You have been signed out");
+      }
+
+      // Log all auth-related events
+      if (event === "SIGNED_IN") {
+        console.log("Sign in successful:", session);
+      } else if (event === "SIGNED_OUT") {
+        console.log("Sign out event:", event);
+      } else if (event === "USER_UPDATED") {
+        console.log("User updated:", session);
+      } else if (event === "USER_DELETED") {
+        console.log("User deleted:", event);
+      } else if (event === "PASSWORD_RECOVERY") {
+        console.log("Password recovery event:", event);
       }
     });
 
@@ -32,6 +44,9 @@ const AuthPage = () => {
       toast.error(errorDescription || "Authentication failed");
     }
 
+    // Log the current URL to help debug redirect issues
+    console.log("Current URL:", window.location.href);
+    
     return () => subscription.unsubscribe();
   }, [navigate]);
 
