@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { LineChart, RefreshCw, Trash } from "lucide-react";
 import { StockHistoricalChart } from "./StockHistoricalChart";
 import { useState } from "react";
@@ -29,6 +29,9 @@ export const StockActions = ({ ticker, onDelete, onUpdate, isUpdating }: StockAc
         <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle>Historical Data for {ticker}</DialogTitle>
+            <DialogDescription>
+              View historical price and volume data for {ticker}
+            </DialogDescription>
           </DialogHeader>
           {selectedTicker === ticker && (
             <StockHistoricalChart ticker={ticker} />
