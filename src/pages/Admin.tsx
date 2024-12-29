@@ -90,13 +90,16 @@ const Admin = () => {
   const handleUpdateMasterList = async () => {
     setIsUpdating(true);
     try {
-      // Get all unique tickers from watchlist_stocks
+      // Get all unique tickers from watchlist_stocks using a proper query
       const { data: watchlistStocks, error: fetchError } = await supabase
         .from('watchlist_stocks')
         .select('ticker')
-        .distinct();
+        .order('ticker');
 
       if (fetchError) throw fetchError;
+
+      // Remove duplicates using Set
+      const uniqueTickers = [...new Set(watchlistStocks?.map(stock => stock.ticker))];
 
       // Get current master stocks
       const { data: currentMasterStocks, error: masterError } = await supabase
@@ -107,7 +110,7 @@ const Admin = () => {
 
       // Find new tickers that aren't in master_stocks
       const currentTickers = new Set(currentMasterStocks.map(stock => stock.ticker));
-      const newTickers = watchlistStocks.filter(stock => !currentTickers.has(stock.ticker));
+      const newTickers = uniqueTickers.filter(ticker => !currentTickers.has(ticker));
 
       if (newTickers.length === 0) {
         toast.info("Master list is already up to date");
@@ -118,7 +121,7 @@ const Admin = () => {
       const { error: insertError } = await supabase
         .from('master_stocks')
         .insert(
-          newTickers.map(({ ticker }) => ({
+          newTickers.map((ticker) => ({
             ticker,
             user_id: session?.user?.id,
             created_by_email: session?.user?.email
