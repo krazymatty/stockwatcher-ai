@@ -22,13 +22,13 @@ const AuthPage = () => {
       }
     });
 
-    // Check URL for error parameters
+    // Check URL for error parameters and log them
     const params = new URLSearchParams(window.location.search);
     const error = params.get('error');
     const errorDescription = params.get('error_description');
     
     if (error) {
-      console.error("Auth error:", error, errorDescription);
+      console.error("Auth error details:", { error, errorDescription });
       toast.error(errorDescription || "Authentication failed");
     }
 
@@ -49,6 +49,10 @@ const AuthPage = () => {
             providers={["google"]}
             redirectTo={`${window.location.origin}/auth`}
             theme="light"
+            onError={(error) => {
+              console.error("Auth error:", error);
+              toast.error(error.message);
+            }}
           />
         </div>
       </div>
