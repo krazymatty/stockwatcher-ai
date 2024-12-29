@@ -47,11 +47,7 @@ const AuthPage = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  // Check if we're in the Lovable preview iframe
-  const isInIframe = window !== window.parent;
-  const redirectUrl = isInIframe 
-    ? `${window.location.origin}/auth?forceHideBadge=true` 
-    : `${window.location.origin}/auth`;
+  const redirectUrl = 'https://57b3bf66-b917-41cb-a3b0-8695ec189dc4.lovableproject.com/auth';
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
