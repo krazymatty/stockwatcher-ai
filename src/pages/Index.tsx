@@ -33,6 +33,10 @@ const Index = () => {
 
       if (error) throw error;
       setWatchlists(data || []);
+      // Reset selected watchlist if it was deleted
+      if (selectedWatchlist && !data?.find(w => w.id === selectedWatchlist.id)) {
+        setSelectedWatchlist(null);
+      }
     } catch (error) {
       console.error("Error fetching watchlists:", error);
       toast.error("Error fetching watchlists");
@@ -98,6 +102,7 @@ const Index = () => {
               watchlists={watchlists}
               selectedWatchlist={selectedWatchlist}
               onSelectWatchlist={setSelectedWatchlist}
+              onWatchlistDeleted={fetchWatchlists}
             />
           </CardContent>
         </Card>
