@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { RefreshCw, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { fetchAndStoreHistoricalData } from "@/utils/stockData";
+import { getStockStatus } from "@/utils/stockStatus";
 import {
   Alert,
   AlertDescription,
@@ -56,7 +57,27 @@ const Admin = () => {
     let failedTickers: string[] = [];
 
     try {
-      for (const stock of stocks) {
+      // First, check the status of all stocks
+      const stocksWithStatus = await Promise.all(
+        stocks.map(async (stock) => ({
+          ...stock,
+          status: await getStockStatus(stock.ticker),
+        }))
+      );
+
+      // Filter stocks that need updating (yellow or red status)
+      const stocksToUpdate = stocksWithStatus.filter(
+        stock => stock.status === "yellow" || stock.status === "red"
+      );
+
+      if (stocksToUpdate.length === 0) {
+        toast.info("No stocks need updating");
+        setIsUpdatingHistorical(false);
+        return;
+      }
+
+      // Update only the filtered stocks
+      for (const stock of stocksToUpdate) {
         try {
           await fetchAndStoreHistoricalData(stock.ticker);
           successCount++;
