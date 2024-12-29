@@ -73,10 +73,39 @@ export const StockHistoricalChart = ({ ticker }: StockHistoricalChartProps) => {
         Number(record.high)
       ]
     }))
-    // Filter out records with zero volume (typically indicates a non-trading day)
+    // Filter out weekends
+    .filter(record => {
+      const date = new Date(record.date);
+      const day = date.getDay();
+      return day !== 0 && day !== 6; // 0 is Sunday, 6 is Saturday
+    })
+    // Filter out records with zero volume (typically indicates a holiday)
     .filter(record => record.volume > 0)
     // Sort by date to ensure proper ordering
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length > 0) {
+      const data = payload[0].payload;
+      return (
+        <div className="bg-background border rounded-lg p-2 shadow-lg">
+          <p className="font-medium">{new Date(label).toLocaleDateString()}</p>
+          {showCandlesticks ? (
+            <>
+              <p>Open: ${data.open.toFixed(2)}</p>
+              <p>High: ${data.high.toFixed(2)}</p>
+              <p>Low: ${data.low.toFixed(2)}</p>
+              <p>Close: ${data.close.toFixed(2)}</p>
+            </>
+          ) : (
+            <p>Close: ${data.close.toFixed(2)}</p>
+          )}
+          <p>Volume: {data.volume.toLocaleString()}</p>
+        </div>
+      );
+    }
+    return null;
+  };
 
   return (
     <div className="space-y-4">
@@ -112,10 +141,7 @@ export const StockHistoricalChart = ({ ticker }: StockHistoricalChartProps) => {
                 domain={['auto', 'auto']}
                 tickFormatter={(value) => `$${value.toFixed(2)}`}
               />
-              <Tooltip
-                labelFormatter={(date) => new Date(date).toLocaleDateString()}
-                formatter={(value) => [`$${Number(value).toFixed(2)}`]}
-              />
+              <Tooltip content={<CustomTooltip />} />
               <Bar
                 dataKey="stockData"
                 fill="#8884d8"
@@ -142,10 +168,7 @@ export const StockHistoricalChart = ({ ticker }: StockHistoricalChartProps) => {
                 domain={['auto', 'auto']}
                 tickFormatter={(value) => `$${value.toFixed(2)}`}
               />
-              <Tooltip
-                labelFormatter={(date) => new Date(date).toLocaleDateString()}
-                formatter={(value) => [`$${Number(value).toFixed(2)}`]}
-              />
+              <Tooltip content={<CustomTooltip />} />
               <Line
                 type="monotone"
                 dataKey="close"
