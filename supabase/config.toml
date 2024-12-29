@@ -1,1 +1,21 @@
 project_id = "objcmewmpwefarwnwruq"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "storage", "graphql_public"]
+
+[db]
+port = 54322
+
+[studio]
+enabled = true
+port = 54323
+
+[[fetch-historical-data.values]]
+name = "SUPABASE_URL"
+from_secret = "SUPABASE_URL"
+
+[[fetch-historical-data.values]]
+name = "SUPABASE_SERVICE_ROLE_KEY"
+from_secret = "SUPABASE_SERVICE_ROLE_KEY"

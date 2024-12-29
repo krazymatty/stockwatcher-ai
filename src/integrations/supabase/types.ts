@@ -63,6 +63,53 @@ export type Database = {
         }
         Relationships: []
       }
+      stock_historical_data: {
+        Row: {
+          close: number
+          created_at: string
+          date: string
+          high: number
+          id: string
+          last_updated: string | null
+          low: number
+          open: number
+          ticker: string
+          volume: number
+        }
+        Insert: {
+          close: number
+          created_at?: string
+          date: string
+          high: number
+          id?: string
+          last_updated?: string | null
+          low: number
+          open: number
+          ticker: string
+          volume: number
+        }
+        Update: {
+          close?: number
+          created_at?: string
+          date?: string
+          high?: number
+          id?: string
+          last_updated?: string | null
+          low?: number
+          open?: number
+          ticker?: string
+          volume?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_ticker"
+            columns: ["ticker"]
+            isOneToOne: false
+            referencedRelation: "master_stocks"
+            referencedColumns: ["ticker"]
+          },
+        ]
+      }
       watchlist_stocks: {
         Row: {
           created_at: string
