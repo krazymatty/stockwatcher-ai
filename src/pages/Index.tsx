@@ -61,11 +61,8 @@ const Index = () => {
 
   const handleSignOut = async () => {
     try {
-      const { error } = await supabase.auth.signOut();
-      if (error) {
-        console.error("Sign out error:", error);
-        toast.error("Error signing out");
-      }
+      await supabase.auth.signOut();
+      // The ProtectedRoute component will handle the navigation
     } catch (error) {
       console.error("Sign out error:", error);
       toast.error("Error signing out");
