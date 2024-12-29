@@ -21,6 +21,7 @@ export const TradingViewChart = ({ ticker }: TradingViewChartProps) => {
       container: containerRef.current,
       datafeed: {
         onReady: (callback: any) => {
+          console.log('TradingView datafeed onReady called');
           callback({
             supported_resolutions: ["1D", "1W", "1M"],
             exchanges: [{ value: "", name: "All Exchanges", desc: "" }],
@@ -29,6 +30,7 @@ export const TradingViewChart = ({ ticker }: TradingViewChartProps) => {
         },
         searchSymbols: () => {},
         resolveSymbol: (symbolName: string, onResolve: any) => {
+          console.log('Resolving symbol:', symbolName);
           onResolve({
             name: symbolName,
             full_name: symbolName,
@@ -46,8 +48,9 @@ export const TradingViewChart = ({ ticker }: TradingViewChartProps) => {
           });
         },
         getBars: async (symbolInfo: any, resolution: string, from: number, to: number, onResult: any) => {
+          console.log('Fetching bars for:', symbolInfo.name, 'from:', new Date(from * 1000), 'to:', new Date(to * 1000));
           try {
-            const { data: historicalData } = await supabase
+            const { data: historicalData, error } = await supabase
               .from('stock_historical_data')
               .select('*')
               .eq('ticker', symbolInfo.name)
@@ -55,7 +58,16 @@ export const TradingViewChart = ({ ticker }: TradingViewChartProps) => {
               .lte('date', new Date(to * 1000).toISOString())
               .order('date', { ascending: true });
 
+            if (error) {
+              console.error('Error fetching historical data:', error);
+              onResult([], { noData: true });
+              return;
+            }
+
+            console.log('Retrieved historical data:', historicalData?.length, 'records');
+
             if (!historicalData?.length) {
+              console.log('No historical data found for ticker:', symbolInfo.name);
               onResult([], { noData: true });
               return;
             }
@@ -69,9 +81,10 @@ export const TradingViewChart = ({ ticker }: TradingViewChartProps) => {
               volume: Number(record.volume),
             }));
 
+            console.log('Processed bars:', bars.length, 'First bar:', bars[0], 'Last bar:', bars[bars.length - 1]);
             onResult(bars);
           } catch (error) {
-            console.error('Error fetching historical data:', error);
+            console.error('Error in getBars:', error);
             onResult([], { noData: true });
           }
         },
@@ -91,6 +104,7 @@ export const TradingViewChart = ({ ticker }: TradingViewChartProps) => {
     };
 
     try {
+      console.log('Initializing TradingView widget for ticker:', ticker);
       const tvWidget = new window.TradingView.widget(widgetOptions);
       return () => {
         tvWidget.remove();
