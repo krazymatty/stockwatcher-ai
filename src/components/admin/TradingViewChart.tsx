@@ -36,16 +36,13 @@ export const TradingViewChart = ({ ticker }: TradingViewChartProps) => {
           time_zone: "America/New_York",
           datafeed: createDatafeedConfig(fetchBars),
           library_path: 'https://s3.tradingview.com/tv.js',
-          width: '100%',
-          height: '100%',
           interval: 'D',
-          timezone: 'America/New_York',
-          style: '1',
           locale: 'en',
-          toolbar_bg: '#f1f3f6',
-          enable_publishing: false,
-          allow_symbol_change: true,
-          container_id: 'tradingview_chart'
+          disabled_features: ['header_symbol_search'],
+          enabled_features: [],
+          charts_storage_url: undefined,
+          client_id: undefined,
+          user_id: undefined
         });
       } catch (error) {
         console.error('Error initializing TradingView widget:', error);
