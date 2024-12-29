@@ -17,8 +17,8 @@ const AuthPage = () => {
       }
       
       // Log any auth errors
-      if (event === 'USER_ERROR') {
-        toast.error("Authentication error occurred");
+      if (event === "SIGNED_OUT" || event === "USER_DELETED") {
+        toast.error("You have been signed out");
       }
     });
 
@@ -49,10 +49,6 @@ const AuthPage = () => {
             providers={["google"]}
             redirectTo={`${window.location.origin}/auth`}
             theme="light"
-            onError={(error) => {
-              console.error("Auth error:", error);
-              toast.error(error.message);
-            }}
           />
         </div>
       </div>
