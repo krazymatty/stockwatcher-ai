@@ -41,7 +41,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
       console.log("Auth state changed:", event, session);
       
       if (mounted) {
-        if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
+        if (event === 'SIGNED_OUT') {
           setIsAuthenticated(false);
           queryClient.clear(); // Clear query cache on logout
         } else if (event === 'SIGNED_IN' && session) {
