@@ -39,11 +39,20 @@ export const WatchlistList = ({
 
       if (updateError) throw updateError;
 
-      // Select the watchlist to make it active
+      // Update all watchlists to reflect the new default
+      const updatedWatchlists = watchlists.map(w => ({
+        ...w,
+        is_default: w.id === watchlist.id
+      }));
+
+      // Select the watchlist to make it active and update its default status
       onSelectWatchlist({
         ...watchlist,
         is_default: true
       });
+
+      // Force a refetch of the watchlists to update the order
+      onWatchlistDeleted();
 
       toast.success('Default watchlist updated');
     } catch (error) {
