@@ -50,7 +50,10 @@ export const TradingViewChart = ({ ticker }: TradingViewChartProps) => {
       try {
         new window.TradingView.widget({
           symbol: ticker,
-          container: containerRef.current, // Changed from container_id to container
+          container: containerRef.current,
+          autosize: true,
+          theme: 'dark',
+          timezone: "America/New_York",
           datafeed: {
             onReady: (callback: any) => {
               console.log('TradingView datafeed onReady called');
@@ -123,10 +126,6 @@ export const TradingViewChart = ({ ticker }: TradingViewChartProps) => {
             subscribeBars: () => {},
             unsubscribeBars: () => {},
           },
-          width: '100%',
-          height: 600,
-          theme: 'dark',
-          timezone: "America/New_York",
         });
       } catch (error) {
         console.error('Error initializing TradingView widget:', error);
