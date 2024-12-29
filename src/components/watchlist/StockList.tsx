@@ -22,25 +22,40 @@ export const StockList = ({ selectedWatchlist, stocks, onStocksChanged }: StockL
     }
 
     if (!newTicker.trim()) {
-      toast.error("Please enter a ticker symbol");
+      toast.error("Please enter ticker symbol(s)");
       return;
     }
 
-    const { error } = await supabase
-      .from('watchlist_stocks')
-      .insert({
-        watchlist_id: selectedWatchlist.id,
-        ticker: newTicker.toUpperCase()
-      });
+    // Split the input by commas and/or spaces and filter out empty strings
+    const tickers = newTicker
+      .toUpperCase()
+      .split(/[,\s]+/)
+      .filter(ticker => ticker.length > 0);
 
-    if (error) {
-      toast.error("Error adding stock");
-      return;
+    let hasError = false;
+    let addedCount = 0;
+
+    for (const ticker of tickers) {
+      const { error } = await supabase
+        .from('watchlist_stocks')
+        .insert({
+          watchlist_id: selectedWatchlist.id,
+          ticker: ticker
+        });
+
+      if (error) {
+        hasError = true;
+        toast.error(`Error adding ${ticker}`);
+      } else {
+        addedCount++;
+      }
     }
 
-    setNewTicker("");
-    toast.success("Stock added successfully");
-    onStocksChanged();
+    if (addedCount > 0) {
+      setNewTicker("");
+      toast.success(`Successfully added ${addedCount} ticker${addedCount > 1 ? 's' : ''}`);
+      onStocksChanged();
+    }
   };
 
   const deleteStock = async (stockId: string) => {
@@ -62,7 +77,7 @@ export const StockList = ({ selectedWatchlist, stocks, onStocksChanged }: StockL
     <>
       <div className="flex gap-2">
         <Input
-          placeholder="Add ticker symbol"
+          placeholder="Add ticker symbols (separate by comma or space)"
           value={newTicker}
           onChange={(e) => setNewTicker(e.target.value)}
         />
