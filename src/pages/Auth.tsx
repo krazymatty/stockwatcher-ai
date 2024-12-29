@@ -17,7 +17,7 @@ const AuthPage = () => {
       }
       
       // Log any auth errors
-      if (event === "SIGNED_OUT" || event === "USER_DELETED") {
+      if (event === "SIGNED_OUT") {
         toast.error("You have been signed out");
       }
     });
