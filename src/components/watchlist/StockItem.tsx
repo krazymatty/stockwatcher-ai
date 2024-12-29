@@ -3,15 +3,14 @@ import { Trash2, LineChart } from "lucide-react";
 import { WatchlistStock } from "@/types/watchlist";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { StockHistoricalChart } from "@/components/admin/StockHistoricalChart";
 
 interface StockItemProps {
   stock: WatchlistStock;
   onDelete: () => void;
+  onSelect: () => void;
 }
 
-export const StockItem = ({ stock, onDelete }: StockItemProps) => {
+export const StockItem = ({ stock, onDelete, onSelect }: StockItemProps) => {
   const deleteStock = async () => {
     const { error } = await supabase
       .from('watchlist_stocks')
@@ -29,19 +28,13 @@ export const StockItem = ({ stock, onDelete }: StockItemProps) => {
 
   return (
     <div className="flex items-center justify-between p-2 border rounded-md">
-      <Dialog>
-        <DialogTrigger asChild>
-          <Button variant="ghost" className="font-mono">
-            {stock.ticker}
-          </Button>
-        </DialogTrigger>
-        <DialogContent className="max-w-3xl">
-          <DialogHeader>
-            <DialogTitle>Historical Data for {stock.ticker}</DialogTitle>
-          </DialogHeader>
-          <StockHistoricalChart ticker={stock.ticker} />
-        </DialogContent>
-      </Dialog>
+      <Button 
+        variant="ghost" 
+        className="font-mono"
+        onClick={onSelect}
+      >
+        {stock.ticker}
+      </Button>
       <Button
         variant="ghost"
         size="icon"

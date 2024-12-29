@@ -6,9 +6,15 @@ interface StockListProps {
   selectedWatchlist: Watchlist | null;
   stocks: WatchlistStock[];
   onStocksChanged: () => void;
+  onSelectTicker: (ticker: string) => void;
 }
 
-export const StockList = ({ selectedWatchlist, stocks, onStocksChanged }: StockListProps) => {
+export const StockList = ({ 
+  selectedWatchlist, 
+  stocks, 
+  onStocksChanged,
+  onSelectTicker 
+}: StockListProps) => {
   if (!selectedWatchlist) {
     return null;
   }
@@ -22,6 +28,7 @@ export const StockList = ({ selectedWatchlist, stocks, onStocksChanged }: StockL
       <StockListDisplay
         stocks={stocks}
         onStocksChanged={onStocksChanged}
+        onSelectTicker={onSelectTicker}
       />
     </>
   );

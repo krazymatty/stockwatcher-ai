@@ -5,11 +5,16 @@ import { Watchlist, WatchlistStock } from "@/types/watchlist";
 import { WatchlistCreate } from "@/components/watchlist/WatchlistCreate";
 import { WatchlistList } from "@/components/watchlist/WatchlistList";
 import { StockList } from "@/components/watchlist/StockList";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { StockHistoricalChart } from "@/components/admin/StockHistoricalChart";
 
 const Index = () => {
   const [watchlists, setWatchlists] = useState<Watchlist[]>([]);
   const [selectedWatchlist, setSelectedWatchlist] = useState<Watchlist | null>(null);
   const [stocks, setStocks] = useState<WatchlistStock[]>([]);
+  const [activeTicker, setActiveTicker] = useState<string>("");
+  const [manualTicker, setManualTicker] = useState<string>("");
   const session = useSession();
 
   const fetchWatchlists = async () => {
@@ -86,12 +91,48 @@ const Index = () => {
     fetchStocks();
   }, [selectedWatchlist]);
 
+  // Set the first stock as active when stocks are loaded or changed
+  useEffect(() => {
+    if (stocks.length > 0 && !activeTicker) {
+      setActiveTicker(stocks[0].ticker);
+    }
+  }, [stocks]);
+
+  const handleTickerSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (manualTicker.trim()) {
+      setActiveTicker(manualTicker.toUpperCase());
+    }
+  };
+
   return (
-    <div className="container mx-auto p-4">
+    <div className="container mx-auto p-4 space-y-8">
+      {/* Chart Section */}
+      <div className="w-full space-y-4">
+        <div className="flex justify-between items-center">
+          <h2 className="text-2xl font-bold">Chart</h2>
+          <form onSubmit={handleTickerSubmit} className="flex gap-2">
+            <Input
+              placeholder="Enter ticker symbol"
+              value={manualTicker}
+              onChange={(e) => setManualTicker(e.target.value)}
+              className="w-40"
+            />
+            <Button type="submit">Load Chart</Button>
+          </form>
+        </div>
+        {activeTicker && (
+          <div className="border rounded-lg p-4">
+            <StockHistoricalChart ticker={activeTicker} />
+          </div>
+        )}
+      </div>
+
+      {/* Watchlists and Stocks Section */}
       <div className="flex flex-col md:flex-row gap-8">
         {/* Left column - Watchlists */}
         <div className="w-full md:w-1/3 space-y-4">
-          <h2 className="text-2xl font-bold mb-4">Watchlists</h2>
+          <h2 className="text-2xl font-bold">Watchlists</h2>
           <WatchlistCreate onWatchlistCreated={fetchWatchlists} />
           <WatchlistList
             watchlists={watchlists}
@@ -103,11 +144,12 @@ const Index = () => {
 
         {/* Right column - Stocks */}
         <div className="w-full md:w-2/3 space-y-4">
-          <h2 className="text-2xl font-bold mb-4">Stocks</h2>
+          <h2 className="text-2xl font-bold">Stocks</h2>
           <StockList
             selectedWatchlist={selectedWatchlist}
             stocks={stocks}
             onStocksChanged={fetchStocks}
+            onSelectTicker={setActiveTicker}
           />
         </div>
       </div>
