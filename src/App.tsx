@@ -8,6 +8,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
+import Admin from "./pages/Admin";
 
 const queryClient = new QueryClient();
 
@@ -43,10 +44,8 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
       }
     };
 
-    // Initial session check
     checkSession();
 
-    // Subscribe to auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log("Auth state changed:", event, session);
       
@@ -55,7 +54,6 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
           setIsAuthenticated(false);
           queryClient.clear();
         } else if (event === 'SIGNED_IN' && session) {
-          // Verify the session is valid
           const { data, error } = await supabase.auth.getUser();
           if (!error && data.user) {
             setIsAuthenticated(true);
@@ -96,6 +94,14 @@ const App = () => {
                 element={
                   <ProtectedRoute>
                     <Index />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin"
+                element={
+                  <ProtectedRoute>
+                    <Admin />
                   </ProtectedRoute>
                 }
               />
