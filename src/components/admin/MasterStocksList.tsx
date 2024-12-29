@@ -1,20 +1,12 @@
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import { Trash, ArrowUpDown, LineChart, RefreshCw } from "lucide-react";
+import { Table, TableBody, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { Database } from "@/integrations/supabase/types";
 import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { StockHistoricalChart } from "./StockHistoricalChart";
-import { getStockStatus, StockStatus } from "@/utils/stockStatus";
+import { getStockStatus } from "@/utils/stockStatus";
 import { fetchAndStoreHistoricalData } from "@/utils/stockData";
-
-type MasterStock = Database["public"]["Tables"]["master_stocks"]["Row"] & {
-  status?: StockStatus;
-};
-type SortField = keyof Pick<MasterStock, "ticker" | "created_by_email" | "created_at" | "last_updated">;
-type SortOrder = "asc" | "desc";
+import { StockTableHeader } from "./StockTableHeader";
+import { StockTableRow } from "./StockTableRow";
+import { MasterStock, SortField, SortOrder } from "./types";
 
 interface MasterStocksListProps {
   stocks: MasterStock[] | undefined;
@@ -24,7 +16,6 @@ interface MasterStocksListProps {
 export const MasterStocksList = ({ stocks, refetch }: MasterStocksListProps) => {
   const [sortField, setSortField] = useState<SortField>("ticker");
   const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
-  const [selectedTicker, setSelectedTicker] = useState<string | null>(null);
   const [stocksWithStatus, setStocksWithStatus] = useState<MasterStock[]>([]);
   const [isUpdating, setIsUpdating] = useState<Record<string, boolean>>({});
 
@@ -101,101 +92,23 @@ export const MasterStocksList = ({ stocks, refetch }: MasterStocksListProps) => 
     return sortOrder === "asc" ? comparison : -comparison;
   }) : [];
 
-  const SortButton = ({ field, children }: { field: SortField, children: React.ReactNode }) => (
-    <Button
-      variant="ghost"
-      onClick={() => handleSort(field)}
-      className="h-8 flex items-center gap-1"
-    >
-      {children}
-      <ArrowUpDown className="h-4 w-4" />
-    </Button>
-  );
-
-  const StatusIndicator = ({ status }: { status: StockStatus }) => {
-    const colors = {
-      green: "bg-green-500",
-      yellow: "bg-yellow-500",
-      red: "bg-red-500"
-    };
-
-    return (
-      <div className={`w-3 h-3 rounded-full ${colors[status]}`} />
-    );
-  };
-
   return (
     <div className="border rounded-lg">
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-[50px]">Status</TableHead>
-            <TableHead>
-              <SortButton field="ticker">Ticker</SortButton>
-            </TableHead>
-            <TableHead>
-              <SortButton field="created_by_email">Added By</SortButton>
-            </TableHead>
-            <TableHead>
-              <SortButton field="created_at">Created At</SortButton>
-            </TableHead>
-            <TableHead>
-              <SortButton field="last_updated">Last Updated</SortButton>
-            </TableHead>
-            <TableHead className="w-[150px]">Actions</TableHead>
+            <StockTableHeader onSort={handleSort} />
           </TableRow>
         </TableHeader>
         <TableBody>
           {sortedStocks.map((stock) => (
-            <TableRow key={stock.ticker}>
-              <TableCell>
-                <StatusIndicator status={stock.status || "red"} />
-              </TableCell>
-              <TableCell className="font-medium">{stock.ticker}</TableCell>
-              <TableCell>{stock.created_by_email || 'Unknown'}</TableCell>
-              <TableCell>{new Date(stock.created_at).toLocaleDateString()}</TableCell>
-              <TableCell>
-                {stock.last_updated
-                  ? new Date(stock.last_updated).toLocaleDateString()
-                  : "-"}
-              </TableCell>
-              <TableCell className="flex items-center gap-2">
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setSelectedTicker(stock.ticker)}
-                    >
-                      <LineChart className="h-4 w-4" />
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-3xl">
-                    <DialogHeader>
-                      <DialogTitle>Historical Data for {stock.ticker}</DialogTitle>
-                    </DialogHeader>
-                    {selectedTicker === stock.ticker && (
-                      <StockHistoricalChart ticker={stock.ticker} />
-                    )}
-                  </DialogContent>
-                </Dialog>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => handleUpdateData(stock.ticker)}
-                  disabled={isUpdating[stock.ticker]}
-                >
-                  <RefreshCw className={`h-4 w-4 ${isUpdating[stock.ticker] ? 'animate-spin' : ''}`} />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => handleDeleteTicker(stock.ticker)}
-                >
-                  <Trash className="h-4 w-4" />
-                </Button>
-              </TableCell>
-            </TableRow>
+            <StockTableRow
+              key={stock.ticker}
+              stock={stock}
+              isUpdating={isUpdating[stock.ticker] || false}
+              onDelete={handleDeleteTicker}
+              onUpdate={handleUpdateData}
+            />
           ))}
         </TableBody>
       </Table>
