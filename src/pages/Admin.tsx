@@ -90,10 +90,10 @@ const Admin = () => {
   const handleUpdateMasterList = async () => {
     setIsUpdating(true);
     try {
-      // Get all unique tickers from watchlist_stocks using a proper query
+      // Get all unique tickers from active watchlists
       const { data: watchlistStocks, error: fetchError } = await supabase
         .from('watchlist_stocks')
-        .select('ticker')
+        .select('ticker, watchlist_id, watchlists!inner(id)')
         .order('ticker');
 
       if (fetchError) throw fetchError;
