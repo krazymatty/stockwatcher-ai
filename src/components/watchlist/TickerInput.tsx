@@ -31,10 +31,24 @@ export const TickerInput = ({ selectedWatchlist, onStocksChanged }: TickerInputP
       .split(/[,\s]+/)
       .filter(ticker => ticker.length > 0);
 
+    // Check for existing tickers in the watchlist
+    const { data: existingStocks } = await supabase
+      .from('watchlist_stocks')
+      .select('ticker')
+      .eq('watchlist_id', selectedWatchlist.id);
+
+    const existingTickers = new Set(existingStocks?.map(stock => stock.ticker) || []);
+    
     let hasError = false;
     let addedCount = 0;
+    let duplicateCount = 0;
 
     for (const ticker of tickers) {
+      if (existingTickers.has(ticker)) {
+        duplicateCount++;
+        continue;
+      }
+
       const { error } = await supabase
         .from('watchlist_stocks')
         .insert({
@@ -54,6 +68,10 @@ export const TickerInput = ({ selectedWatchlist, onStocksChanged }: TickerInputP
       setNewTicker("");
       toast.success(`Successfully added ${addedCount} ticker${addedCount > 1 ? 's' : ''}`);
       onStocksChanged();
+    }
+
+    if (duplicateCount > 0) {
+      toast.error(`${duplicateCount} ticker${duplicateCount > 1 ? 's were' : ' was'} already in the watchlist`);
     }
   };
 
