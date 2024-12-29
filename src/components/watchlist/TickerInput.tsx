@@ -58,20 +58,26 @@ export const TickerInput = ({ selectedWatchlist, onStocksChanged }: TickerInputP
 
       try {
         // First, try to add to master_stocks if it doesn't exist
-        await supabase
+        const { error: masterStocksError } = await supabase
           .from('master_stocks')
-          .upsert({ ticker }, { onConflict: 'ticker' });
+          .upsert({ ticker });
+
+        if (masterStocksError) {
+          console.error("Error adding to master_stocks:", masterStocksError);
+          hasError = true;
+          continue;
+        }
 
         // Then add to watchlist_stocks
-        const { error } = await supabase
+        const { error: watchlistStocksError } = await supabase
           .from('watchlist_stocks')
           .insert({
             watchlist_id: selectedWatchlist.id,
             ticker: ticker
           });
 
-        if (error) {
-          console.error("Error adding stock:", error);
+        if (watchlistStocksError) {
+          console.error("Error adding stock:", watchlistStocksError);
           hasError = true;
           toast.error(`Error adding ${ticker}`);
         } else {
