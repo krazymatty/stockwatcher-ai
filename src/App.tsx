@@ -83,12 +83,12 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
 const App = () => {
   return (
-    <QueryClientProvider client={queryClient}>
-      <SessionContextProvider supabaseClient={supabase}>
-        <TooltipProvider>
-          <SidebarProvider>
-            <div className="min-h-screen flex w-full">
-              <BrowserRouter>
+    <BrowserRouter>
+      <QueryClientProvider client={queryClient}>
+        <SessionContextProvider supabaseClient={supabase}>
+          <TooltipProvider>
+            <SidebarProvider>
+              <div className="min-h-screen flex w-full">
                 <Routes>
                   <Route path="/auth" element={<Auth />} />
                   <Route
@@ -114,14 +114,14 @@ const App = () => {
                     }
                   />
                 </Routes>
-              </BrowserRouter>
-            </div>
-          </SidebarProvider>
-          <Toaster />
-          <Sonner />
-        </TooltipProvider>
-      </SessionContextProvider>
-    </QueryClientProvider>
+              </div>
+            </SidebarProvider>
+            <Toaster />
+            <Sonner />
+          </TooltipProvider>
+        </SessionContextProvider>
+      </QueryClientProvider>
+    </BrowserRouter>
   );
 };
 
