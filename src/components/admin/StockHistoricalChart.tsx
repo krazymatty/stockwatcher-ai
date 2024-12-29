@@ -40,16 +40,21 @@ export const StockHistoricalChart = ({ ticker }: StockHistoricalChartProps) => {
     );
   }
 
-  // Format the data to ensure proper numeric values
-  const formattedData = historicalData.map(record => ({
-    ...record,
-    close: Number(record.close),
-    open: Number(record.open),
-    high: Number(record.high),
-    low: Number(record.low),
-    volume: Number(record.volume),
-    date: new Date(record.date).toISOString(),
-  }));
+  // Format and filter the data to remove weekends and holidays
+  const formattedData = historicalData
+    .map(record => ({
+      ...record,
+      close: Number(record.close),
+      open: Number(record.open),
+      high: Number(record.high),
+      low: Number(record.low),
+      volume: Number(record.volume),
+      date: new Date(record.date).toISOString(),
+    }))
+    // Filter out records with zero volume (typically indicates a non-trading day)
+    .filter(record => record.volume > 0)
+    // Sort by date to ensure proper ordering
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
   return (
     <div className="w-full h-[400px]">
@@ -82,6 +87,7 @@ export const StockHistoricalChart = ({ ticker }: StockHistoricalChartProps) => {
             stroke="#8884d8"
             name="Close Price"
             dot={false}
+            connectNulls={true}
           />
         </LineChart>
       </ResponsiveContainer>
