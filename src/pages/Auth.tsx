@@ -40,7 +40,7 @@ const AuthPage = () => {
       toast.error(errorDescription || "Authentication failed");
     }
 
-    // Log the current URL to help debug redirect issues
+    // Log the current URL to help debug
     console.log("Current URL:", window.location.href);
     
     return () => subscription.unsubscribe();
@@ -49,6 +49,19 @@ const AuthPage = () => {
   const handleGoogleSignIn = async () => {
     try {
       console.log("Starting Google sign in process...");
+      
+      // Check if we're in the Lovable preview iframe
+      const isInIframe = window !== window.parent;
+      
+      if (isInIframe) {
+        // If in iframe, open in new tab
+        const signInURL = `${window.location.origin}/auth?forceHideBadge=true`;
+        window.open(signInURL, '_blank');
+        toast.info("Please continue sign in in the new tab");
+        return;
+      }
+
+      // Normal sign in flow for non-iframe cases
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
