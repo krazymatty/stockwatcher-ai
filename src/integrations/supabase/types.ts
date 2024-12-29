@@ -13,21 +13,30 @@ export type Database = {
         Row: {
           created_at: string
           created_by_email: string | null
+          display_name: string | null
+          instrument_type: string
           last_updated: string | null
+          metadata: Json | null
           ticker: string
           user_id: string | null
         }
         Insert: {
           created_at?: string
           created_by_email?: string | null
+          display_name?: string | null
+          instrument_type: string
           last_updated?: string | null
+          metadata?: Json | null
           ticker: string
           user_id?: string | null
         }
         Update: {
           created_at?: string
           created_by_email?: string | null
+          display_name?: string | null
+          instrument_type?: string
           last_updated?: string | null
+          metadata?: Json | null
           ticker?: string
           user_id?: string | null
         }

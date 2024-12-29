@@ -2,6 +2,7 @@ import { TableCell, TableRow } from "@/components/ui/table";
 import { StockStatusIndicator } from "./StockStatusIndicator";
 import { StockActions } from "./StockActions";
 import { MasterStock } from "./types";
+import { Badge } from "@/components/ui/badge";
 
 interface StockTableRowProps {
   stock: MasterStock;
@@ -16,12 +17,34 @@ export const StockTableRow = ({
   onDelete, 
   onUpdate 
 }: StockTableRowProps) => {
+  const getInstrumentColor = (type: string | null) => {
+    switch (type) {
+      case 'stock':
+        return 'default';
+      case 'etf':
+        return 'secondary';
+      case 'future':
+        return 'destructive';
+      default:
+        return 'outline';
+    }
+  };
+
   return (
     <TableRow>
       <TableCell>
         <StockStatusIndicator status={stock.status || "red"} />
       </TableCell>
-      <TableCell className="font-medium">{stock.ticker}</TableCell>
+      <TableCell className="font-medium">
+        <div className="flex items-center gap-2">
+          {stock.ticker}
+          {stock.instrument_type && (
+            <Badge variant={getInstrumentColor(stock.instrument_type)}>
+              {stock.instrument_type.toUpperCase()}
+            </Badge>
+          )}
+        </div>
+      </TableCell>
       <TableCell>{stock.created_by_email || 'Unknown'}</TableCell>
       <TableCell>{new Date(stock.created_at).toLocaleDateString()}</TableCell>
       <TableCell>

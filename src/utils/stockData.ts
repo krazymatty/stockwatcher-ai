@@ -14,9 +14,12 @@ export const fetchAndStoreHistoricalData = async (ticker: string) => {
     }
 
     if (!data.success) {
-      throw new Error(data.error || `Failed to fetch data for ${ticker}`);
+      const errorMessage = data.error || `Failed to fetch data for ${ticker}`;
+      console.error('API Error:', errorMessage);
+      throw new Error(errorMessage);
     }
 
+    console.log(`Successfully fetched data for ${ticker}:`, data);
     return data;
   } catch (error) {
     console.error(`Error processing historical data for ${ticker}:`, error);
