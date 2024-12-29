@@ -13,11 +13,18 @@ async function fetchAlphaVantageData(symbol: string) {
   }
 
   const url = `https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=${symbol}&apikey=${apiKey}&outputsize=compact`;
+  console.log('Making request to Alpha Vantage API...');
   const response = await fetch(url);
   const data = await response.json();
+  console.log('Alpha Vantage response:', JSON.stringify(data));
 
   if (data['Error Message']) {
     throw new Error(`Alpha Vantage error: ${data['Error Message']}`);
+  }
+
+  if (data['Note']) {
+    // This usually means we've hit the API rate limit
+    throw new Error(`Alpha Vantage API limit reached: ${data['Note']}`);
   }
 
   if (!data['Time Series (Daily)']) {
@@ -30,21 +37,21 @@ async function fetchAlphaVantageData(symbol: string) {
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
+    return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { ticker } = await req.json()
+    const { ticker } = await req.json();
     if (!ticker) {
-      throw new Error('Ticker is required')
+      throw new Error('Ticker is required');
     }
 
-    console.log(`Fetching data for ${ticker}`);
+    console.log(`Processing request for ${ticker}`);
     
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    )
+    );
 
     // Determine if it's an ETF
     const isETF = ['SPY', 'QQQ', 'IWM', 'DIA', 'VTI'].includes(ticker.toUpperCase());
@@ -78,6 +85,8 @@ Deno.serve(async (req) => {
       volume: Number(values['5. volume'])
     }));
 
+    console.log(`Processed ${historicalData.length} records for ${ticker}`);
+
     // Insert the data into our database
     const { error: insertError } = await supabaseClient
       .from('stock_historical_data')
@@ -107,6 +116,7 @@ Deno.serve(async (req) => {
     console.error('Error:', error);
     return new Response(
       JSON.stringify({
+        success: false,
         error: error.message,
         ticker: error.ticker || null
       }),
