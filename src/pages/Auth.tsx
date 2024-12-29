@@ -3,6 +3,7 @@ import { ThemeSupa } from "@supabase/auth-ui-shared";
 import { useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const AuthPage = () => {
   const navigate = useNavigate();
@@ -10,10 +11,26 @@ const AuthPage = () => {
   useEffect(() => {
     // Check if user is already logged in
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log("Auth state changed:", event, session);
       if (session) {
         navigate("/");
       }
+      
+      // Log any auth errors
+      if (event === 'USER_ERROR') {
+        toast.error("Authentication error occurred");
+      }
     });
+
+    // Check URL for error parameters
+    const params = new URLSearchParams(window.location.search);
+    const error = params.get('error');
+    const errorDescription = params.get('error_description');
+    
+    if (error) {
+      console.error("Auth error:", error, errorDescription);
+      toast.error(errorDescription || "Authentication failed");
+    }
 
     return () => subscription.unsubscribe();
   }, [navigate]);
@@ -30,8 +47,12 @@ const AuthPage = () => {
             supabaseClient={supabase}
             appearance={{ theme: ThemeSupa }}
             providers={["google"]}
-            redirectTo={window.location.origin}
+            redirectTo={`${window.location.origin}/auth`}
             theme="light"
+            onError={(error) => {
+              console.error("Auth error:", error);
+              toast.error(error.message);
+            }}
           />
         </div>
       </div>
