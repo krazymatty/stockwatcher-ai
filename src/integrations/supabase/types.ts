@@ -37,6 +37,7 @@ export type Database = {
         Row: {
           avatar_url: string | null
           created_at: string
+          default_watchlist_id: string | null
           first_name: string | null
           id: string
           last_name: string | null
@@ -46,6 +47,7 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           created_at?: string
+          default_watchlist_id?: string | null
           first_name?: string | null
           id: string
           last_name?: string | null
@@ -55,13 +57,22 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           created_at?: string
+          default_watchlist_id?: string | null
           first_name?: string | null
           id?: string
           last_name?: string | null
           updated_at?: string | null
           username?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_default_watchlist_id_fkey"
+            columns: ["default_watchlist_id"]
+            isOneToOne: false
+            referencedRelation: "watchlists"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       stock_historical_data: {
         Row: {
