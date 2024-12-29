@@ -11,6 +11,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Admin from "./pages/Admin";
+import Profile from "./pages/Profile";
 
 const queryClient = new QueryClient();
 
@@ -40,6 +41,16 @@ const App = () => {
                       <ProtectedRoute>
                         <AppLayout>
                           <Admin />
+                        </AppLayout>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/profile"
+                    element={
+                      <ProtectedRoute>
+                        <AppLayout>
+                          <Profile />
                         </AppLayout>
                       </ProtectedRoute>
                     }
