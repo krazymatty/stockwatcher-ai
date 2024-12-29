@@ -53,7 +53,7 @@ export const TradingViewChart = ({ ticker }: TradingViewChartProps) => {
           container: containerRef.current,
           autosize: true,
           theme: 'dark',
-          timezone: "America/New_York",
+          time_zone: "America/New_York",
           datafeed: {
             onReady: (callback: any) => {
               console.log('TradingView datafeed onReady called');
@@ -72,7 +72,7 @@ export const TradingViewChart = ({ ticker }: TradingViewChartProps) => {
                 description: symbolName,
                 type: "stock",
                 session: "0930-1630",
-                timezone: "America/New_York",
+                time_zone: "America/New_York",
                 exchange: "",
                 minmov: 1,
                 pricescale: 100,
