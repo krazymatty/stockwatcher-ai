@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plus } from "lucide-react";
@@ -8,11 +8,18 @@ import { useSession } from "@supabase/auth-helpers-react";
 
 interface AddTickerFormProps {
   refetch: () => void;
+  initialTicker?: string;
 }
 
-export const AddTickerForm = ({ refetch }: AddTickerFormProps) => {
+export const AddTickerForm = ({ refetch, initialTicker }: AddTickerFormProps) => {
   const [newTicker, setNewTicker] = useState("");
   const session = useSession();
+
+  useEffect(() => {
+    if (initialTicker) {
+      setNewTicker(initialTicker);
+    }
+  }, [initialTicker]);
 
   const handleAddTicker = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,7 +49,7 @@ export const AddTickerForm = ({ refetch }: AddTickerFormProps) => {
   };
 
   return (
-    <form onSubmit={handleAddTicker} className="flex gap-4 mb-8">
+    <form onSubmit={handleAddTicker} className="flex gap-2">
       <Input
         type="text"
         value={newTicker}
@@ -50,7 +57,7 @@ export const AddTickerForm = ({ refetch }: AddTickerFormProps) => {
         placeholder="Enter ticker symbol"
         className="max-w-xs"
       />
-      <Button type="submit">
+      <Button type="submit" size="sm">
         <Plus className="mr-2 h-4 w-4" />
         Add Ticker
       </Button>

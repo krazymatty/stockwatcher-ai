@@ -3,56 +3,32 @@ import { StockStatusIndicator } from "./StockStatusIndicator";
 import { StockActions } from "./StockActions";
 import { MasterStock } from "./types";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 interface StockTableRowProps {
   stock: MasterStock;
   isUpdating: boolean;
   onDelete: (ticker: string) => void;
   onUpdate: (ticker: string) => void;
+  onSelect: () => void;
 }
 
 export const StockTableRow = ({ 
   stock, 
   isUpdating, 
   onDelete, 
-  onUpdate 
+  onUpdate,
+  onSelect
 }: StockTableRowProps) => {
-  const getInstrumentColor = (type: string | null) => {
-    switch (type) {
-      case 'stock':
-        return 'default';
-      case 'etf':
-        return 'secondary';
-      case 'future':
-        return 'destructive';
-      default:
-        return 'outline';
-    }
-  };
-
   return (
-    <TableRow>
-      <TableCell>
+    <TableRow className="h-8 hover:bg-muted/50 cursor-pointer" onClick={onSelect}>
+      <TableCell className="py-1">
         <StockStatusIndicator status={stock.status || "red"} />
       </TableCell>
-      <TableCell className="font-medium">
-        <div className="flex items-center gap-2">
-          {stock.ticker}
-          {stock.instrument_type && (
-            <Badge variant={getInstrumentColor(stock.instrument_type)}>
-              {stock.instrument_type.toUpperCase()}
-            </Badge>
-          )}
-        </div>
+      <TableCell className="py-1 font-medium">
+        {stock.ticker}
       </TableCell>
-      <TableCell>{stock.created_by_email || 'Unknown'}</TableCell>
-      <TableCell>{new Date(stock.created_at).toLocaleDateString()}</TableCell>
-      <TableCell>
-        {stock.last_updated
-          ? new Date(stock.last_updated).toLocaleDateString()
-          : "-"}
-      </TableCell>
-      <TableCell>
+      <TableCell className="py-1">
         <StockActions
           ticker={stock.ticker}
           onDelete={onDelete}

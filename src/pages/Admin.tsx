@@ -22,6 +22,7 @@ const Admin = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [isUpdatingHistorical, setIsUpdatingHistorical] = useState(false);
   const [failedTickers, setFailedTickers] = useState<string[]>([]);
+  const [selectedTicker, setSelectedTicker] = useState<string>("");
 
   const { data: stocks, refetch } = useQuery({
     queryKey: ["master-stocks"],
@@ -111,10 +112,10 @@ const Admin = () => {
   }
 
   return (
-    <div className="container mx-auto py-8">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">Master Stocks List</h1>
-        <div className="flex gap-4">
+    <div className="container mx-auto py-4">
+      <div className="flex justify-between items-center mb-4">
+        <h1 className="text-2xl font-bold">Master Stocks List</h1>
+        <div className="flex gap-2">
           <UpdateMasterListButton refetch={refetch} />
           <Button 
             variant="outline"
@@ -128,7 +129,7 @@ const Admin = () => {
       </div>
 
       {failedTickers.length > 0 && (
-        <Alert variant="destructive" className="mb-8">
+        <Alert variant="destructive" className="mb-4">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Failed to fetch data for some tickers</AlertTitle>
           <AlertDescription>
@@ -138,8 +139,25 @@ const Admin = () => {
         </Alert>
       )}
 
-      <AddTickerForm refetch={refetch} />
-      <MasterStocksList stocks={stocks} refetch={refetch} />
+      <div className="flex gap-4">
+        <div className="w-3/4">
+          <div className="border rounded-lg p-4 bg-background">
+            <AddTickerForm refetch={refetch} initialTicker={selectedTicker} />
+            {selectedTicker && (
+              <div className="mt-4">
+                <StockHistoricalChart ticker={selectedTicker} />
+              </div>
+            )}
+          </div>
+        </div>
+        <div className="w-1/4">
+          <MasterStocksList 
+            stocks={stocks} 
+            refetch={refetch} 
+            onSelectTicker={setSelectedTicker}
+          />
+        </div>
+      </div>
     </div>
   );
 };

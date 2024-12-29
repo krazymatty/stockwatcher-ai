@@ -11,9 +11,10 @@ import { MasterStock, SortField, SortOrder } from "./types";
 interface MasterStocksListProps {
   stocks: MasterStock[] | undefined;
   refetch: () => void;
+  onSelectTicker: (ticker: string) => void;
 }
 
-export const MasterStocksList = ({ stocks, refetch }: MasterStocksListProps) => {
+export const MasterStocksList = ({ stocks, refetch, onSelectTicker }: MasterStocksListProps) => {
   const [sortField, setSortField] = useState<SortField>("ticker");
   const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
   const [stocksWithStatus, setStocksWithStatus] = useState<MasterStock[]>([]);
@@ -97,25 +98,28 @@ export const MasterStocksList = ({ stocks, refetch }: MasterStocksListProps) => 
   }) : [];
 
   return (
-    <div className="border rounded-lg">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <StockTableHeader onSort={handleSort} />
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {sortedStocks.map((stock) => (
-            <StockTableRow
-              key={stock.ticker}
-              stock={stock}
-              isUpdating={isUpdating[stock.ticker] || false}
-              onDelete={handleDeleteTicker}
-              onUpdate={handleUpdateData}
-            />
-          ))}
-        </TableBody>
-      </Table>
+    <div className="border rounded-lg overflow-hidden">
+      <div className="max-h-[calc(100vh-12rem)] overflow-y-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <StockTableHeader onSort={handleSort} />
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {sortedStocks.map((stock) => (
+              <StockTableRow
+                key={stock.ticker}
+                stock={stock}
+                isUpdating={isUpdating[stock.ticker] || false}
+                onDelete={handleDeleteTicker}
+                onUpdate={handleUpdateData}
+                onSelect={() => onSelectTicker(stock.ticker)}
+              />
+            ))}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 };
