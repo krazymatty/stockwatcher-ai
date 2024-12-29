@@ -7,9 +7,14 @@ interface StockListDisplayProps {
 }
 
 export const StockListDisplay = ({ stocks, onStocksChanged }: StockListDisplayProps) => {
+  // Sort stocks alphabetically by ticker
+  const sortedStocks = [...stocks].sort((a, b) => 
+    a.ticker.localeCompare(b.ticker)
+  );
+
   return (
     <div className="space-y-2">
-      {stocks.map((stock) => (
+      {sortedStocks.map((stock) => (
         <StockItem
           key={stock.id}
           stock={stock}
