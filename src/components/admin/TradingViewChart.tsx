@@ -33,7 +33,7 @@ export const TradingViewChart = ({ ticker }: TradingViewChartProps) => {
           container: containerRef.current,
           autosize: true,
           theme: 'dark',
-          timezone: "America/New_York",
+          time_zone: "America/New_York", // Changed from timezone to time_zone
           datafeed: createDatafeedConfig(fetchBars),
         });
       } catch (error) {
