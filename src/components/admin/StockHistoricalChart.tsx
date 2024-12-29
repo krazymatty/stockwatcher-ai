@@ -9,7 +9,8 @@ import {
   Tooltip, 
   ResponsiveContainer,
   ComposedChart,
-  Bar
+  Bar,
+  Rectangle
 } from "recharts";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
@@ -19,6 +20,48 @@ import { useState } from "react";
 interface StockHistoricalChartProps {
   ticker: string;
 }
+
+// Custom candlestick component
+const CustomCandlestick = (props: any) => {
+  const { x, y, width, height, payload } = props;
+  const open = payload.open;
+  const close = payload.close;
+  const high = payload.high;
+  const low = payload.low;
+
+  // Calculate positions
+  const centerX = x + width / 2;
+  const bodyTop = Math.min(open, close);
+  const bodyBottom = Math.max(open, close);
+  const bodyHeight = Math.abs(close - open);
+  
+  // Determine if it's a bullish (green) or bearish (red) candlestick
+  const fill = close >= open ? "#22c55e" : "#ef4444";
+  const stroke = fill;
+
+  return (
+    <g>
+      {/* Draw the wick (high to low) */}
+      <line
+        x1={centerX}
+        y1={high}
+        x2={centerX}
+        y2={low}
+        stroke={stroke}
+        strokeWidth={1}
+      />
+      {/* Draw the body (open to close) */}
+      <rect
+        x={x}
+        y={bodyTop}
+        width={width}
+        height={Math.max(1, bodyHeight)} // Ensure minimum height of 1px
+        fill={fill}
+        stroke={stroke}
+      />
+    </g>
+  );
+};
 
 export const StockHistoricalChart = ({ ticker }: StockHistoricalChartProps) => {
   const [showCandlesticks, setShowCandlesticks] = useState(true);
@@ -55,7 +98,7 @@ export const StockHistoricalChart = ({ ticker }: StockHistoricalChartProps) => {
     );
   }
 
-  // Format and filter the data to remove weekends and holidays
+  // Format and filter the data
   const formattedData = historicalData
     .map(record => ({
       ...record,
@@ -64,14 +107,7 @@ export const StockHistoricalChart = ({ ticker }: StockHistoricalChartProps) => {
       high: Number(record.high),
       low: Number(record.low),
       volume: Number(record.volume),
-      date: new Date(record.date).toISOString(),
-      // Add a custom property for candlestick visualization
-      stockData: [
-        Number(record.open),
-        Number(record.close),
-        Number(record.low),
-        Number(record.high)
-      ]
+      date: new Date(record.date).toISOString()
     }))
     // Filter out weekends
     .filter(record => {
@@ -143,9 +179,8 @@ export const StockHistoricalChart = ({ ticker }: StockHistoricalChartProps) => {
               />
               <Tooltip content={<CustomTooltip />} />
               <Bar
-                dataKey="stockData"
-                fill="#8884d8"
-                stroke="#8884d8"
+                dataKey="high"
+                shape={<CustomCandlestick />}
                 name="Stock Price"
               />
             </ComposedChart>
