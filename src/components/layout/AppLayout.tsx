@@ -1,5 +1,5 @@
 import { AppSidebar } from "./Sidebar";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -10,11 +10,36 @@ import {
 import { User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useSession, useSupabaseClient } from "@supabase/auth-helpers-react";
+import { useEffect, useState } from "react";
 
 export const AppLayout = ({ children }: { children: React.ReactNode }) => {
   const navigate = useNavigate();
   const session = useSession();
   const supabase = useSupabaseClient();
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (session?.user) {
+      getProfile();
+    }
+  }, [session]);
+
+  const getProfile = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("avatar_url")
+        .eq("id", session?.user?.id)
+        .single();
+
+      if (error) throw error;
+      if (data) {
+        setAvatarUrl(data.avatar_url);
+      }
+    } catch (error) {
+      console.error("Error loading avatar:", error);
+    }
+  };
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -30,6 +55,7 @@ export const AppLayout = ({ children }: { children: React.ReactNode }) => {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="h-8 w-8 rounded-full">
                 <Avatar className="h-8 w-8">
+                  <AvatarImage src={avatarUrl || undefined} />
                   <AvatarFallback>
                     <User className="h-4 w-4" />
                   </AvatarFallback>

@@ -6,13 +6,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { User } from "lucide-react";
 
 const Profile = () => {
   const session = useSession();
   const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
   const [username, setUsername] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
   useEffect(() => {
     getProfile();
@@ -24,7 +28,7 @@ const Profile = () => {
 
       const { data, error } = await supabase
         .from("profiles")
-        .select("username, first_name, last_name")
+        .select("username, first_name, last_name, avatar_url")
         .eq("id", session.user.id)
         .single();
 
@@ -34,6 +38,7 @@ const Profile = () => {
         setUsername(data.username || "");
         setFirstName(data.first_name || "");
         setLastName(data.last_name || "");
+        setAvatarUrl(data.avatar_url);
       }
     } catch (error) {
       console.error("Error loading profile:", error);
@@ -52,6 +57,7 @@ const Profile = () => {
         username,
         first_name: firstName,
         last_name: lastName,
+        avatar_url: avatarUrl,
         updated_at: new Date().toISOString(),
       };
 
@@ -64,6 +70,38 @@ const Profile = () => {
     } catch (error) {
       console.error("Error updating profile:", error);
       toast.error("Error updating profile");
+    }
+  };
+
+  const uploadAvatar = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    try {
+      setUploading(true);
+
+      if (!event.target.files || event.target.files.length === 0) {
+        throw new Error("You must select an image to upload.");
+      }
+
+      const file = event.target.files[0];
+      const fileExt = file.name.split(".").pop();
+      const filePath = `${session?.user?.id}/${Math.random()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("avatars")
+        .upload(filePath, file);
+
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      const { data } = supabase.storage.from("avatars").getPublicUrl(filePath);
+      
+      setAvatarUrl(data.publicUrl);
+      toast.success("Avatar uploaded successfully");
+    } catch (error) {
+      console.error("Error uploading avatar:", error);
+      toast.error("Error uploading avatar");
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -82,6 +120,24 @@ const Profile = () => {
           <CardTitle>Profile Settings</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
+          <div className="flex flex-col items-center space-y-4">
+            <Avatar className="h-24 w-24">
+              <AvatarImage src={avatarUrl || undefined} />
+              <AvatarFallback>
+                <User className="h-12 w-12" />
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex items-center space-x-4">
+              <Input
+                type="file"
+                accept="image/*"
+                onChange={uploadAvatar}
+                disabled={uploading}
+                className="w-full"
+              />
+            </div>
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="username">Username</Label>
             <Input
