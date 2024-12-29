@@ -24,9 +24,6 @@ export const UpdateMasterListButton = ({ refetch }: UpdateMasterListButtonProps)
 
       if (fetchError) throw fetchError;
 
-      // Remove duplicates using Set
-      const uniqueTickers = [...new Set(watchlistStocks?.map(stock => stock.ticker))];
-
       // Get current master stocks
       const { data: currentMasterStocks, error: masterError } = await supabase
         .from('master_stocks')
@@ -34,29 +31,51 @@ export const UpdateMasterListButton = ({ refetch }: UpdateMasterListButtonProps)
 
       if (masterError) throw masterError;
 
-      // Find new tickers that aren't in master_stocks
-      const currentTickers = new Set(currentMasterStocks.map(stock => stock.ticker));
-      const newTickers = uniqueTickers.filter(ticker => !currentTickers.has(ticker));
+      // Create sets for easier comparison
+      const activeWatchlistTickers = new Set(watchlistStocks?.map(stock => stock.ticker));
+      const masterTickers = new Set(currentMasterStocks.map(stock => stock.ticker));
 
-      if (newTickers.length === 0) {
-        toast.info("Master list is already up to date");
-        return;
+      // Find tickers to add (in watchlists but not in master)
+      const tickersToAdd = [...activeWatchlistTickers].filter(ticker => !masterTickers.has(ticker));
+
+      // Find tickers to remove (in master but not in any watchlist)
+      const tickersToRemove = [...masterTickers].filter(ticker => !activeWatchlistTickers.has(ticker));
+
+      // Add new tickers
+      if (tickersToAdd.length > 0) {
+        const { error: insertError } = await supabase
+          .from('master_stocks')
+          .insert(
+            tickersToAdd.map((ticker) => ({
+              ticker,
+              user_id: session?.user?.id,
+              created_by_email: session?.user?.email
+            }))
+          );
+
+        if (insertError) throw insertError;
       }
 
-      // Add new tickers to master_stocks
-      const { error: insertError } = await supabase
-        .from('master_stocks')
-        .insert(
-          newTickers.map((ticker) => ({
-            ticker,
-            user_id: session?.user?.id,
-            created_by_email: session?.user?.email
-          }))
-        );
+      // Remove orphaned tickers
+      if (tickersToRemove.length > 0) {
+        const { error: deleteError } = await supabase
+          .from('master_stocks')
+          .delete()
+          .in('ticker', tickersToRemove);
 
-      if (insertError) throw insertError;
+        if (deleteError) throw deleteError;
+      }
 
-      toast.success(`Added ${newTickers.length} new tickers to master list`);
+      // Show appropriate toast message
+      if (tickersToAdd.length === 0 && tickersToRemove.length === 0) {
+        toast.info("Master list is already up to date");
+      } else {
+        const addedMsg = tickersToAdd.length > 0 ? `Added ${tickersToAdd.length} new tickers` : '';
+        const removedMsg = tickersToRemove.length > 0 ? `Removed ${tickersToRemove.length} orphaned tickers` : '';
+        const message = [addedMsg, removedMsg].filter(Boolean).join(' and ');
+        toast.success(message);
+      }
+
       refetch();
     } catch (error) {
       console.error("Error updating master list:", error);
