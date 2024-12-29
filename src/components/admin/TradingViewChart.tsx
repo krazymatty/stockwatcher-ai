@@ -39,7 +39,7 @@ export const TradingViewChart = ({ ticker }: TradingViewChartProps) => {
         
         widgetRef.current = new window.TradingView.widget({
           symbol: ticker,
-          container: containerRef.current.id,
+          container: containerRef.current, // Pass the HTMLElement directly
           autosize: true,
           theme: 'dark',
           time_zone: "America/New_York",
