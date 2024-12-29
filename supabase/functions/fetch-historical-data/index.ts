@@ -16,16 +16,21 @@ Deno.serve(async (req) => {
       throw new Error('Ticker is required')
     }
 
+    console.log(`Fetching historical data for ${ticker}`)
+
     // This is a mock implementation - replace with actual API call
+    // Simulate random failures for testing error handling
+    if (Math.random() < 0.2) { // 20% chance of failure for testing
+      throw new Error(`Failed to fetch data for ${ticker} (simulated failure)`)
+    }
+    
     const mockData = generateMockHistoricalData(ticker)
     
-    // Initialize Supabase client
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    // Store the data in the database
     const { error: insertError } = await supabaseClient
       .from('stock_historical_data')
       .upsert(mockData, { 
@@ -48,7 +53,10 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error('Error:', error)
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message,
+        ticker: error.ticker || null
+      }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 400 

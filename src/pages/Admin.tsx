@@ -6,15 +6,21 @@ import { MasterStocksList } from "@/components/admin/MasterStocksList";
 import { AddTickerForm } from "@/components/admin/AddTickerForm";
 import { UpdateMasterListButton } from "@/components/admin/UpdateMasterListButton";
 import { Button } from "@/components/ui/button";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { fetchAndStoreHistoricalData } from "@/utils/stockData";
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "@/components/ui/alert"
 
 type MasterStock = Database["public"]["Tables"]["master_stocks"]["Row"];
 
 const Admin = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [isUpdatingHistorical, setIsUpdatingHistorical] = useState(false);
+  const [failedTickers, setFailedTickers] = useState<string[]>([]);
 
   const { data: stocks, refetch } = useQuery({
     queryKey: ["master-stocks"],
@@ -45,8 +51,9 @@ const Admin = () => {
     }
 
     setIsUpdatingHistorical(true);
+    setFailedTickers([]);
     let successCount = 0;
-    let errorCount = 0;
+    let failedTickers: string[] = [];
 
     try {
       for (const stock of stocks) {
@@ -55,15 +62,17 @@ const Admin = () => {
           successCount++;
         } catch (error) {
           console.error(`Failed to fetch data for ${stock.ticker}:`, error);
-          errorCount++;
+          failedTickers.push(stock.ticker);
         }
       }
 
       if (successCount > 0) {
         toast.success(`Updated historical data for ${successCount} stocks`);
       }
-      if (errorCount > 0) {
-        toast.error(`Failed to update ${errorCount} stocks`);
+      
+      if (failedTickers.length > 0) {
+        setFailedTickers(failedTickers);
+        toast.error(`Failed to update ${failedTickers.length} stocks`);
       }
     } finally {
       setIsUpdatingHistorical(false);
@@ -96,6 +105,17 @@ const Admin = () => {
           </Button>
         </div>
       </div>
+
+      {failedTickers.length > 0 && (
+        <Alert variant="destructive" className="mb-8">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Failed to fetch data for some tickers</AlertTitle>
+          <AlertDescription>
+            The following tickers failed to fetch: {failedTickers.join(", ")}. 
+            This might be because the tickers don't exist or there was an API error.
+          </AlertDescription>
+        </Alert>
+      )}
 
       <AddTickerForm refetch={refetch} />
       <MasterStocksList stocks={stocks} refetch={refetch} />
