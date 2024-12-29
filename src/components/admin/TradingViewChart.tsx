@@ -15,30 +15,39 @@ export const TradingViewChart = ({ ticker }: TradingViewChartProps) => {
   const { fetchBars } = useStockHistoricalData();
 
   useEffect(() => {
+    // Only proceed if script is loaded and container is ready
     if (!isScriptLoaded || !containerRef.current || !window.TradingView) {
       return;
     }
 
-    const initializeWidget = () => {
+    // Clean up previous widget instance if it exists
+    if (widgetRef.current) {
       try {
-        if (widgetRef.current) {
-          widgetRef.current.remove();
-          widgetRef.current = null;
-        }
+        widgetRef.current.remove();
+      } catch (error) {
+        console.error('Error cleaning up previous widget:', error);
+      }
+      widgetRef.current = null;
+    }
 
+    // Wait for the next frame to ensure DOM is ready
+    const initializeWidget = () => {
+      if (!containerRef.current) return; // Double check container still exists
+
+      try {
         console.log('Initializing TradingView widget for ticker:', ticker);
         
         widgetRef.current = new window.TradingView.widget({
           symbol: ticker,
-          container: containerRef.current,
+          container: containerRef.current.id,
           autosize: true,
           theme: 'dark',
           time_zone: "America/New_York",
           datafeed: createDatafeedConfig(fetchBars),
-          library_path: 'https://s3.tradingview.com/tv.js',
+          library_path: 'https://s3.tradingview.com/tv.js/',
           interval: 'D',
           locale: 'en',
-          disabled_features: ['header_symbol_search', 'header_symbol_search'],
+          disabled_features: ['header_symbol_search'],
           enabled_features: [],
           allow_symbol_change: false
         });
@@ -48,11 +57,10 @@ export const TradingViewChart = ({ ticker }: TradingViewChartProps) => {
       }
     };
 
-    // Initialize widget with a delay to ensure container is ready
-    const timeoutId = setTimeout(initializeWidget, 500);
+    // Use requestAnimationFrame to ensure DOM is ready
+    requestAnimationFrame(initializeWidget);
 
     return () => {
-      clearTimeout(timeoutId);
       if (widgetRef.current) {
         try {
           widgetRef.current.remove();
