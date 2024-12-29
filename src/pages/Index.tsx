@@ -60,13 +60,14 @@ const Index = () => {
   };
 
   const handleSignOut = async () => {
-    try {
-      await supabase.auth.signOut();
-      navigate("/auth");
-      toast.success("Signed out successfully");
-    } catch (error) {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
       toast.error("Error signing out");
+      console.error("Sign out error:", error);
+      return;
     }
+    navigate("/auth");
+    toast.success("Signed out successfully");
   };
 
   return (
