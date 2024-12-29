@@ -12,7 +12,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Database } from "@/integrations/supabase/types";
-import { Plus, Trash } from "lucide-react";
+import { Plus, RefreshCw, Trash } from "lucide-react";
 import { toast } from "sonner";
 import { useSession } from "@supabase/auth-helpers-react";
 
@@ -21,6 +21,7 @@ type MasterStock = Database["public"]["Tables"]["master_stocks"]["Row"];
 const Admin = () => {
   const [newTicker, setNewTicker] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
   const session = useSession();
 
   const { data: stocks, refetch } = useQuery({
@@ -86,6 +87,56 @@ const Admin = () => {
     }
   };
 
+  const handleUpdateMasterList = async () => {
+    setIsUpdating(true);
+    try {
+      // Get all unique tickers from watchlist_stocks
+      const { data: watchlistStocks, error: fetchError } = await supabase
+        .from('watchlist_stocks')
+        .select('ticker')
+        .distinct();
+
+      if (fetchError) throw fetchError;
+
+      // Get current master stocks
+      const { data: currentMasterStocks, error: masterError } = await supabase
+        .from('master_stocks')
+        .select('ticker');
+
+      if (masterError) throw masterError;
+
+      // Find new tickers that aren't in master_stocks
+      const currentTickers = new Set(currentMasterStocks.map(stock => stock.ticker));
+      const newTickers = watchlistStocks.filter(stock => !currentTickers.has(stock.ticker));
+
+      if (newTickers.length === 0) {
+        toast.info("Master list is already up to date");
+        return;
+      }
+
+      // Add new tickers to master_stocks
+      const { error: insertError } = await supabase
+        .from('master_stocks')
+        .insert(
+          newTickers.map(({ ticker }) => ({
+            ticker,
+            user_id: session?.user?.id,
+            created_by_email: session?.user?.email
+          }))
+        );
+
+      if (insertError) throw insertError;
+
+      toast.success(`Added ${newTickers.length} new tickers to master list`);
+      refetch();
+    } catch (error) {
+      console.error("Error updating master list:", error);
+      toast.error("Failed to update master list");
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   if (!isAdmin) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -98,7 +149,17 @@ const Admin = () => {
 
   return (
     <div className="container mx-auto py-8">
-      <h1 className="text-3xl font-bold mb-8">Master Stocks List</h1>
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-bold">Master Stocks List</h1>
+        <Button 
+          onClick={handleUpdateMasterList} 
+          disabled={isUpdating}
+          variant="outline"
+        >
+          <RefreshCw className={`mr-2 h-4 w-4 ${isUpdating ? 'animate-spin' : ''}`} />
+          Update Master List
+        </Button>
+      </div>
 
       <form onSubmit={handleAddTicker} className="flex gap-4 mb-8">
         <Input
