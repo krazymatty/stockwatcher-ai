@@ -9,7 +9,7 @@ import {
   Tooltip, 
   ResponsiveContainer,
   ComposedChart,
-  Candlestick
+  Bar
 } from "recharts";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
@@ -65,6 +65,13 @@ export const StockHistoricalChart = ({ ticker }: StockHistoricalChartProps) => {
       low: Number(record.low),
       volume: Number(record.volume),
       date: new Date(record.date).toISOString(),
+      // Add a custom property for candlestick visualization
+      stockData: [
+        Number(record.open),
+        Number(record.close),
+        Number(record.low),
+        Number(record.high)
+      ]
     }))
     // Filter out records with zero volume (typically indicates a non-trading day)
     .filter(record => record.volume > 0)
@@ -109,9 +116,11 @@ export const StockHistoricalChart = ({ ticker }: StockHistoricalChartProps) => {
                 labelFormatter={(date) => new Date(date).toLocaleDateString()}
                 formatter={(value) => [`$${Number(value).toFixed(2)}`]}
               />
-              <Candlestick
-                name="Price"
-                yAccessor={(data) => [data.open, data.high, data.low, data.close]}
+              <Bar
+                dataKey="stockData"
+                fill="#8884d8"
+                stroke="#8884d8"
+                name="Stock Price"
               />
             </ComposedChart>
           ) : (
