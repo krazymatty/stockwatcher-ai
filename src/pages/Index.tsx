@@ -1,23 +1,14 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { LogOut, Plus, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-
-interface Watchlist {
-  id: string;
-  name: string;
-  created_at: string;
-}
-
-interface WatchlistStock {
-  id: string;
-  ticker: string;
-  created_at: string;
-}
+import { WatchlistCreate } from "@/components/watchlist/WatchlistCreate";
+import { WatchlistList } from "@/components/watchlist/WatchlistList";
+import { StockList } from "@/components/watchlist/StockList";
+import { Watchlist, WatchlistStock } from "@/types/watchlist";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -25,8 +16,6 @@ const Index = () => {
   const [watchlists, setWatchlists] = useState<Watchlist[]>([]);
   const [selectedWatchlist, setSelectedWatchlist] = useState<Watchlist | null>(null);
   const [stocks, setStocks] = useState<WatchlistStock[]>([]);
-  const [newWatchlistName, setNewWatchlistName] = useState("");
-  const [newTicker, setNewTicker] = useState("");
 
   useEffect(() => {
     const getUserEmail = async () => {
@@ -70,73 +59,6 @@ const Index = () => {
     setStocks(data);
   };
 
-  const createWatchlist = async () => {
-    if (!newWatchlistName.trim()) {
-      toast.error("Please enter a watchlist name");
-      return;
-    }
-
-    const { data, error } = await supabase
-      .from('watchlists')
-      .insert([{ name: newWatchlistName }])
-      .select()
-      .single();
-
-    if (error) {
-      toast.error("Error creating watchlist");
-      return;
-    }
-
-    setNewWatchlistName("");
-    toast.success("Watchlist created successfully");
-    fetchWatchlists();
-  };
-
-  const addStock = async () => {
-    if (!selectedWatchlist) {
-      toast.error("Please select a watchlist first");
-      return;
-    }
-
-    if (!newTicker.trim()) {
-      toast.error("Please enter a ticker symbol");
-      return;
-    }
-
-    const { error } = await supabase
-      .from('watchlist_stocks')
-      .insert([{
-        watchlist_id: selectedWatchlist.id,
-        ticker: newTicker.toUpperCase()
-      }]);
-
-    if (error) {
-      toast.error("Error adding stock");
-      return;
-    }
-
-    setNewTicker("");
-    toast.success("Stock added successfully");
-    fetchStocks(selectedWatchlist.id);
-  };
-
-  const deleteStock = async (stockId: string) => {
-    const { error } = await supabase
-      .from('watchlist_stocks')
-      .delete()
-      .eq('id', stockId);
-
-    if (error) {
-      toast.error("Error deleting stock");
-      return;
-    }
-
-    toast.success("Stock removed successfully");
-    if (selectedWatchlist) {
-      fetchStocks(selectedWatchlist.id);
-    }
-  };
-
   const handleSignOut = async () => {
     try {
       await supabase.auth.signOut();
@@ -169,29 +91,12 @@ const Index = () => {
             <CardTitle>Watchlists</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex gap-2">
-              <Input
-                placeholder="New watchlist name"
-                value={newWatchlistName}
-                onChange={(e) => setNewWatchlistName(e.target.value)}
-              />
-              <Button onClick={createWatchlist}>
-                <Plus className="mr-2 h-4 w-4" />
-                Create
-              </Button>
-            </div>
-            <div className="space-y-2">
-              {watchlists.map((watchlist) => (
-                <Button
-                  key={watchlist.id}
-                  variant={selectedWatchlist?.id === watchlist.id ? "default" : "outline"}
-                  className="w-full justify-start"
-                  onClick={() => setSelectedWatchlist(watchlist)}
-                >
-                  {watchlist.name}
-                </Button>
-              ))}
-            </div>
+            <WatchlistCreate onWatchlistCreated={fetchWatchlists} />
+            <WatchlistList
+              watchlists={watchlists}
+              selectedWatchlist={selectedWatchlist}
+              onSelectWatchlist={setSelectedWatchlist}
+            />
           </CardContent>
         </Card>
 
@@ -203,36 +108,11 @@ const Index = () => {
           </CardHeader>
           <CardContent className="space-y-4">
             {selectedWatchlist && (
-              <>
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Add ticker symbol"
-                    value={newTicker}
-                    onChange={(e) => setNewTicker(e.target.value)}
-                  />
-                  <Button onClick={addStock}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add
-                  </Button>
-                </div>
-                <div className="space-y-2">
-                  {stocks.map((stock) => (
-                    <div
-                      key={stock.id}
-                      className="flex items-center justify-between p-2 border rounded-md"
-                    >
-                      <span className="font-mono">{stock.ticker}</span>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => deleteStock(stock.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              </>
+              <StockList
+                selectedWatchlist={selectedWatchlist}
+                stocks={stocks}
+                onStocksChanged={() => fetchStocks(selectedWatchlist.id)}
+              />
             )}
           </CardContent>
         </Card>
