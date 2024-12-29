@@ -2,7 +2,8 @@ import { useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
+import { Auth } from '@supabase/auth-ui-react';
+import { ThemeSupa } from '@supabase/auth-ui-shared';
 
 const AuthPage = () => {
   const navigate = useNavigate();
@@ -46,42 +47,11 @@ const AuthPage = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  const handleGoogleSignIn = async () => {
-    try {
-      console.log("Starting Google sign in process...");
-      
-      // Check if we're in the Lovable preview iframe
-      const isInIframe = window !== window.parent;
-      
-      if (isInIframe) {
-        // If in iframe, open in new tab
-        const signInURL = `${window.location.origin}/auth?forceHideBadge=true`;
-        window.open(signInURL, '_blank');
-        toast.info("Please continue sign in in the new tab");
-        return;
-      }
-
-      // Normal sign in flow for non-iframe cases
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
-          },
-          redirectTo: window.location.origin + '/auth'
-        }
-      });
-
-      if (error) {
-        console.error("Sign in error:", error);
-        toast.error(error.message);
-      }
-    } catch (error) {
-      console.error("Unexpected error during sign in:", error);
-      toast.error("An unexpected error occurred");
-    }
-  };
+  // Check if we're in the Lovable preview iframe
+  const isInIframe = window !== window.parent;
+  const redirectUrl = isInIframe 
+    ? `${window.location.origin}/auth?forceHideBadge=true` 
+    : `${window.location.origin}/auth`;
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -91,13 +61,23 @@ const AuthPage = () => {
           <p className="text-muted-foreground">Sign in to manage your watchlists</p>
         </div>
         <div className="bg-card p-6 rounded-lg shadow-lg">
-          <Button 
-            onClick={handleGoogleSignIn}
-            className="w-full"
-            variant="outline"
-          >
-            Sign in with Google
-          </Button>
+          <Auth
+            supabaseClient={supabase}
+            appearance={{ 
+              theme: ThemeSupa,
+              variables: {
+                default: {
+                  colors: {
+                    brand: 'rgb(var(--primary))',
+                    brandAccent: 'rgb(var(--primary))',
+                  },
+                },
+              },
+            }}
+            providers={['google']}
+            redirectTo={redirectUrl}
+            onlyThirdPartyProviders={false}
+          />
         </div>
       </div>
     </div>
