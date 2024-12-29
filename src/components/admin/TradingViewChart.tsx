@@ -50,7 +50,7 @@ export const TradingViewChart = ({ ticker }: TradingViewChartProps) => {
       try {
         new window.TradingView.widget({
           symbol: ticker,
-          container_id: containerRef.current?.id || 'tv_chart_container',
+          container: containerRef.current, // Changed from container_id to container
           datafeed: {
             onReady: (callback: any) => {
               console.log('TradingView datafeed onReady called');
@@ -138,6 +138,6 @@ export const TradingViewChart = ({ ticker }: TradingViewChartProps) => {
   }, [ticker]);
 
   return (
-    <div ref={containerRef} id="tv_chart_container" className="w-full h-[600px]" />
+    <div ref={containerRef} className="w-full h-[600px]" />
   );
 };
