@@ -16,14 +16,22 @@ const Index = () => {
     if (!session?.user?.id) return;
 
     try {
+      // First, get the user's profile to check for default watchlist
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('default_watchlist_id')
+        .eq('id', session.user.id)
+        .single();
+
+      if (profileError) {
+        console.error('Error fetching profile:', profileError);
+        return;
+      }
+
+      // Then fetch all watchlists
       const { data: watchlistsData, error: watchlistsError } = await supabase
         .from('watchlists')
-        .select(`
-          *,
-          profiles!watchlists_user_id_fkey_profiles (
-            default_watchlist_id
-          )
-        `)
+        .select('*')
         .eq('user_id', session.user.id)
         .order('created_at');
 
@@ -35,7 +43,7 @@ const Index = () => {
       // Transform the data to include is_default flag
       const transformedWatchlists = watchlistsData.map(watchlist => ({
         ...watchlist,
-        is_default: watchlist.profiles?.[0]?.default_watchlist_id === watchlist.id
+        is_default: watchlist.id === profileData?.default_watchlist_id
       }));
 
       setWatchlists(transformedWatchlists);

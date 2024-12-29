@@ -28,7 +28,8 @@ export const WatchlistList = ({
     }
 
     try {
-      const { error } = await supabase
+      // Update the profiles table with the new default watchlist
+      const { error: updateError } = await supabase
         .from('profiles')
         .update({ 
           default_watchlist_id: watchlistId,
@@ -36,7 +37,7 @@ export const WatchlistList = ({
         })
         .eq('id', session.user.id);
 
-      if (error) throw error;
+      if (updateError) throw updateError;
 
       // Update local state by modifying the is_default property
       const updatedWatchlists = watchlists.map(w => ({
