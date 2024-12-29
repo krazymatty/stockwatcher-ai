@@ -8,6 +8,7 @@ interface TradingViewChartProps {
 
 export const TradingViewChart = ({ ticker }: TradingViewChartProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const widgetRef = useRef<any>(null);
 
   useEffect(() => {
     const loadTradingViewLibrary = async () => {
@@ -24,7 +25,11 @@ export const TradingViewChart = ({ ticker }: TradingViewChartProps) => {
           const script = document.createElement('script');
           script.src = 'https://s3.tradingview.com/tv.js';
           script.async = true;
-          script.onload = () => initializeWidget();
+          script.onload = () => {
+            if (containerRef.current) {
+              initializeWidget();
+            }
+          };
           script.onerror = () => {
             console.error('Failed to load TradingView library');
             toast.error('Failed to load chart library');
@@ -40,15 +45,21 @@ export const TradingViewChart = ({ ticker }: TradingViewChartProps) => {
     };
 
     const initializeWidget = () => {
-      if (!window.TradingView) {
-        console.error('TradingView library not available');
+      if (!window.TradingView || !containerRef.current) {
+        console.error('TradingView library or container not available');
         return;
+      }
+
+      // Clean up previous widget instance if it exists
+      if (widgetRef.current) {
+        widgetRef.current.remove();
+        widgetRef.current = null;
       }
 
       console.log('Initializing TradingView widget for ticker:', ticker);
       
       try {
-        new window.TradingView.widget({
+        widgetRef.current = new window.TradingView.widget({
           symbol: ticker,
           container: containerRef.current,
           autosize: true,
@@ -134,9 +145,17 @@ export const TradingViewChart = ({ ticker }: TradingViewChartProps) => {
     };
 
     loadTradingViewLibrary();
+
+    // Cleanup function
+    return () => {
+      if (widgetRef.current) {
+        widgetRef.current.remove();
+        widgetRef.current = null;
+      }
+    };
   }, [ticker]);
 
   return (
-    <div ref={containerRef} className="w-full h-[600px]" />
+    <div ref={containerRef} style={{ width: '100%', height: '600px' }} />
   );
 };
