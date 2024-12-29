@@ -10,7 +10,11 @@ export const TradingViewChart = ({ ticker }: TradingViewChartProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!containerRef.current) return;
+    // Ensure both the container and TradingView library are available
+    if (!containerRef.current || !window.TradingView) {
+      console.warn('TradingView library or container not ready');
+      return;
+    }
 
     const widgetOptions = {
       symbol: ticker,
@@ -86,11 +90,14 @@ export const TradingViewChart = ({ ticker }: TradingViewChartProps) => {
       theme: 'dark',
     };
 
-    const tvWidget = new widget(widgetOptions);
-
-    return () => {
-      tvWidget.remove();
-    };
+    try {
+      const tvWidget = new window.TradingView.widget(widgetOptions);
+      return () => {
+        tvWidget.remove();
+      };
+    } catch (error) {
+      console.error('Error initializing TradingView widget:', error);
+    }
   }, [ticker]);
 
   return (
