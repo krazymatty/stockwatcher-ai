@@ -1,5 +1,4 @@
 import { useEffect, useRef } from 'react';
-import { widget } from '@/lib/tradingview/charting_library';
 import { useTradingViewScript } from '@/hooks/useTradingViewScript';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -48,16 +47,18 @@ export const TradingViewChart = ({ ticker }: TradingViewChartProps) => {
         }
 
         // Create new widget instance
-        widgetRef.current = new widget({
+        widgetRef.current = new window.TradingView.widget({
           symbol: `${exchange}:${symbol}`,
           interval: 'D',
           container: containerRef.current,
-          library_path: '/charting_library/',
-          locale: 'en',
-          disabled_features: ['use_localstorage_for_settings'],
-          enabled_features: ['study_templates'],
+          width: '100%',
+          height: '100%',
           theme: 'dark',
-          autosize: true,
+          style: '1',
+          toolbar_bg: '#f1f3f6',
+          enable_publishing: false,
+          allow_symbol_change: true,
+          save_image: false,
         });
       } catch (error) {
         console.error('Error initializing TradingView chart:', error);

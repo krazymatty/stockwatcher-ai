@@ -16,8 +16,7 @@ export const useTradingViewScript = () => {
       try {
         console.log('Loading TradingView library...');
         const script = document.createElement('script');
-        script.src = '/charting_library/charting_library.js';
-        script.type = 'text/javascript';
+        script.src = 'https://s3.tradingview.com/tv.js';
         script.async = true;
         script.onload = () => {
           console.log('TradingView library loaded successfully');
@@ -38,7 +37,7 @@ export const useTradingViewScript = () => {
 
     // Cleanup
     return () => {
-      const script = document.querySelector('script[src="/charting_library/charting_library.js"]');
+      const script = document.querySelector('script[src="https://s3.tradingview.com/tv.js"]');
       if (script) {
         document.head.removeChild(script);
       }
