@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useTradingViewScript } from '@/hooks/useTradingViewScript';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { ChartingLibraryWidgetOptions } from '@/lib/tradingview/charting_library/types';
 
 interface TradingViewChartProps {
   ticker: string;
@@ -46,8 +47,8 @@ export const TradingViewChart = ({ ticker }: TradingViewChartProps) => {
           widgetRef.current = null;
         }
 
-        // Create new widget instance
-        widgetRef.current = new window.TradingView.widget({
+        // Create new widget instance with proper typing
+        const widgetOptions: ChartingLibraryWidgetOptions = {
           symbol: `${exchange}:${symbol}`,
           interval: 'D',
           container: containerRef.current,
@@ -59,7 +60,9 @@ export const TradingViewChart = ({ ticker }: TradingViewChartProps) => {
           enable_publishing: false,
           allow_symbol_change: true,
           save_image: false,
-        });
+        };
+
+        widgetRef.current = new window.TradingView.widget(widgetOptions);
       } catch (error) {
         console.error('Error initializing TradingView chart:', error);
         toast.error('Failed to initialize chart');

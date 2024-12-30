@@ -21,7 +21,14 @@ export interface ChartingLibraryWidgetOptions {
   user_id?: string;
   theme?: string;
   time_zone?: string;
+  // Add missing properties
+  width?: string | number;
+  height?: string | number;
+  style?: string;
+  toolbar_bg?: string;
+  enable_publishing?: boolean;
   allow_symbol_change?: boolean;
+  save_image?: boolean;
 }
 
 export interface ChartingLibraryWidget {
