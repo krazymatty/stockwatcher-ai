@@ -54,6 +54,7 @@ export const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
           navigate('/auth', { replace: true });
         } else if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session) {
           setIsAuthenticated(true);
+          navigate('/dashboard', { replace: true });
         }
         setIsLoading(false);
       }

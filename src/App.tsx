@@ -12,6 +12,7 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Admin from "./pages/Admin";
 import Profile from "./pages/Profile";
+import Dashboard from "./pages/Dashboard";
 
 const queryClient = new QueryClient();
 
@@ -24,13 +25,14 @@ const App = () => {
             <SidebarProvider>
               <div className="min-h-screen flex w-full">
                 <Routes>
+                  <Route path="/" element={<Index />} />
                   <Route path="/auth" element={<Auth />} />
                   <Route
-                    path="/"
+                    path="/dashboard"
                     element={
                       <ProtectedRoute>
                         <AppLayout>
-                          <Index />
+                          <Dashboard />
                         </AppLayout>
                       </ProtectedRoute>
                     }

@@ -35,11 +35,11 @@ export function AppSidebar() {
             <SidebarMenu>
               <SidebarMenuItem>
                 <SidebarMenuButton asChild>
-                  <NavLink to="/" className={({ isActive }) => 
+                  <NavLink to="/dashboard" className={({ isActive }) => 
                     isActive ? "text-primary" : "text-muted-foreground"
                   }>
                     <Home className="h-4 w-4 mr-2" />
-                    <span>Home</span>
+                    <span>Dashboard</span>
                   </NavLink>
                 </SidebarMenuButton>
               </SidebarMenuItem>
