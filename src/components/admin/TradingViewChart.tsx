@@ -15,8 +15,14 @@ export const TradingViewChart = ({ ticker }: TradingViewChartProps) => {
 
   useEffect(() => {
     const initializeChart = async () => {
-      if (!isScriptLoaded || !containerRef.current) {
-        console.log('Script not loaded or container not ready');
+      if (!isScriptLoaded) {
+        console.log('Script not loaded');
+        return;
+      }
+
+      // Wait for the container to be mounted
+      if (!containerRef.current) {
+        console.log('Container not ready');
         return;
       }
 
@@ -60,9 +66,16 @@ export const TradingViewChart = ({ ticker }: TradingViewChartProps) => {
           enable_publishing: false,
           allow_symbol_change: true,
           save_image: false,
+          autosize: true, // Add autosize option
+          fullscreen: false, // Disable fullscreen by default
         };
 
-        widgetRef.current = new window.TradingView.widget(widgetOptions);
+        // Small delay to ensure DOM is ready
+        setTimeout(() => {
+          if (containerRef.current) {
+            widgetRef.current = new window.TradingView.widget(widgetOptions);
+          }
+        }, 0);
       } catch (error) {
         console.error('Error initializing TradingView chart:', error);
         toast.error('Failed to initialize chart');
@@ -79,5 +92,5 @@ export const TradingViewChart = ({ ticker }: TradingViewChartProps) => {
     };
   }, [isScriptLoaded, ticker]);
 
-  return <div ref={containerRef} className="h-[500px]" />;
+  return <div ref={containerRef} className="h-[500px] w-full" />;
 };
