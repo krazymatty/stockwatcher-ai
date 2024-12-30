@@ -9,10 +9,12 @@ interface StockHistoricalChartProps {
 
 export const StockHistoricalChart = ({ ticker }: StockHistoricalChartProps) => {
   const [latestPrice, setLatestPrice] = useState<number | null>(null);
+  const [exchange, setExchange] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchLatestPrice = async () => {
-      const { data, error } = await supabase
+    const fetchLatestPriceAndExchange = async () => {
+      // Fetch latest price
+      const { data: priceData, error: priceError } = await supabase
         .from('stock_historical_data')
         .select('close, date')
         .eq('ticker', ticker)
@@ -20,27 +22,53 @@ export const StockHistoricalChart = ({ ticker }: StockHistoricalChartProps) => {
         .limit(1)
         .single();
 
-      if (error) {
-        console.error('Error fetching latest price:', error);
+      if (priceError) {
+        console.error('Error fetching latest price:', priceError);
         return;
       }
 
-      if (data) {
-        setLatestPrice(Number(data.close));
+      if (priceData) {
+        setLatestPrice(Number(priceData.close));
+      }
+
+      // Fetch exchange info
+      const { data: stockData, error: stockError } = await supabase
+        .from('master_stocks')
+        .select('exchange')
+        .eq('ticker', ticker)
+        .single();
+
+      if (stockError) {
+        console.error('Error fetching exchange:', stockError);
+        return;
+      }
+
+      if (stockData) {
+        setExchange(stockData.exchange);
       }
     };
 
-    fetchLatestPrice();
+    fetchLatestPriceAndExchange();
   }, [ticker]);
 
   return (
     <div className="space-y-2">
-      {latestPrice !== null && (
+      <div className="flex flex-col space-y-2">
         <div className="flex items-center justify-between px-4 py-2 bg-muted rounded-md">
-          <span className="text-sm font-medium">Latest Close</span>
-          <span className="font-mono text-lg">${latestPrice.toFixed(2)}</span>
+          <div className="flex items-center space-x-2">
+            <span className="text-sm font-medium">Symbol</span>
+            <span className="text-lg font-mono">{ticker}</span>
+            {exchange && (
+              <span className="text-xs text-muted-foreground bg-secondary px-2 py-0.5 rounded">
+                {exchange}
+              </span>
+            )}
+          </div>
+          {latestPrice !== null && (
+            <span className="font-mono text-lg">${latestPrice.toFixed(2)}</span>
+          )}
         </div>
-      )}
+      </div>
       <TradingViewChart ticker={ticker} />
     </div>
   );
