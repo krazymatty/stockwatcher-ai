@@ -10,11 +10,11 @@ interface StockActionsProps {
 
 export const StockActions = ({ ticker, onDelete, onUpdate, isUpdating }: StockActionsProps) => {
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex items-center gap-0.5">
       <Button
         variant="ghost"
         size="icon"
-        className="h-6 w-6"
+        className="h-5 w-5"
         onClick={(e) => {
           e.stopPropagation();
           onUpdate(ticker);
@@ -26,7 +26,7 @@ export const StockActions = ({ ticker, onDelete, onUpdate, isUpdating }: StockAc
       <Button
         variant="ghost"
         size="icon"
-        className="h-6 w-6"
+        className="h-5 w-5"
         onClick={(e) => {
           e.stopPropagation();
           onDelete(ticker);

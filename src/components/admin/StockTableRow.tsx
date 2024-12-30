@@ -2,8 +2,6 @@ import { TableCell, TableRow } from "@/components/ui/table";
 import { StockStatusIndicator } from "./StockStatusIndicator";
 import { StockActions } from "./StockActions";
 import { MasterStock } from "./types";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 
 interface StockTableRowProps {
   stock: MasterStock;
@@ -21,14 +19,14 @@ export const StockTableRow = ({
   onSelect
 }: StockTableRowProps) => {
   return (
-    <TableRow className="h-8 hover:bg-muted/50 cursor-pointer" onClick={onSelect}>
-      <TableCell className="py-1">
+    <TableRow className="h-6 hover:bg-muted/50 cursor-pointer" onClick={onSelect}>
+      <TableCell className="py-0.5">
         <StockStatusIndicator status={stock.status || "red"} />
       </TableCell>
-      <TableCell className="py-1 font-medium">
+      <TableCell className="py-0.5 font-medium text-sm">
         {stock.ticker}
       </TableCell>
-      <TableCell className="py-1">
+      <TableCell className="py-0.5">
         <StockActions
           ticker={stock.ticker}
           onDelete={onDelete}
