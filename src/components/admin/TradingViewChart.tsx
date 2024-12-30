@@ -14,6 +14,8 @@ export const TradingViewChart = ({ ticker }: TradingViewChartProps) => {
   const isScriptLoaded = useTradingViewScript();
 
   useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+
     const initializeChart = async () => {
       if (!isScriptLoaded) {
         console.log('Script not loaded');
@@ -66,16 +68,24 @@ export const TradingViewChart = ({ ticker }: TradingViewChartProps) => {
           enable_publishing: false,
           allow_symbol_change: true,
           save_image: false,
-          autosize: true, // Add autosize option
-          fullscreen: false, // Disable fullscreen by default
+          autosize: true,
+          fullscreen: false,
         };
 
-        // Small delay to ensure DOM is ready
-        setTimeout(() => {
-          if (containerRef.current) {
-            widgetRef.current = new window.TradingView.widget(widgetOptions);
+        // Use a longer delay to ensure DOM is fully ready
+        timeoutId = setTimeout(() => {
+          if (containerRef.current && containerRef.current.offsetWidth > 0) {
+            try {
+              widgetRef.current = new window.TradingView.widget(widgetOptions);
+            } catch (err) {
+              console.error('Widget initialization error:', err);
+              toast.error('Failed to initialize chart widget');
+            }
+          } else {
+            console.error('Container not properly sized');
+            toast.error('Chart container not ready');
           }
-        }, 0);
+        }, 100); // Increased delay to 100ms
       } catch (error) {
         console.error('Error initializing TradingView chart:', error);
         toast.error('Failed to initialize chart');
@@ -85,6 +95,9 @@ export const TradingViewChart = ({ ticker }: TradingViewChartProps) => {
     initializeChart();
 
     return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
       if (widgetRef.current) {
         widgetRef.current.remove();
         widgetRef.current = null;
@@ -92,5 +105,11 @@ export const TradingViewChart = ({ ticker }: TradingViewChartProps) => {
     };
   }, [isScriptLoaded, ticker]);
 
-  return <div ref={containerRef} className="h-[500px] w-full" />;
+  return (
+    <div 
+      ref={containerRef} 
+      className="h-[500px] w-full border rounded-lg overflow-hidden"
+      style={{ minWidth: '100px' }} // Ensure minimum width
+    />
+  );
 };
