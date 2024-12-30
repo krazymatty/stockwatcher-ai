@@ -1,29 +1,32 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTradingViewScript } from '@/hooks/useTradingViewScript';
+import { useTradingViewData } from '@/hooks/useTradingViewData';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { ChartingLibraryWidgetOptions } from '@/lib/tradingview/charting_library/types';
 
 interface TradingViewChartProps {
   ticker: string;
+  onDataUpdate?: (data: any) => void;
 }
 
-export const TradingViewChart = ({ ticker }: TradingViewChartProps) => {
+export const TradingViewChart = ({ ticker, onDataUpdate }: TradingViewChartProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const widgetRef = useRef<any>(null);
   const mountedRef = useRef(false);
   const [isContainerReady, setIsContainerReady] = useState(false);
   const isScriptLoaded = useTradingViewScript();
+  
+  // Get real-time data from TradingView
+  const chartData = useTradingViewData(widgetRef);
 
-  // Set mounted ref on component mount
+  // Notify parent component when data updates
   useEffect(() => {
-    mountedRef.current = true;
-    return () => {
-      mountedRef.current = false;
-    };
-  }, []);
+    if (chartData && onDataUpdate) {
+      onDataUpdate(chartData);
+    }
+  }, [chartData, onDataUpdate]);
 
-  // Monitor container size
   useEffect(() => {
     if (!containerRef.current) return;
 
@@ -123,7 +126,7 @@ export const TradingViewChart = ({ ticker }: TradingViewChartProps) => {
   return (
     <div 
       ref={containerRef}
-      id={`tv_chart_${ticker}`} // Add unique ID for container
+      id={`tv_chart_${ticker}`}
       className="h-[500px] w-full border rounded-lg overflow-hidden bg-background"
       style={{ minWidth: '300px' }}
     />
