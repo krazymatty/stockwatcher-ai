@@ -1,7 +1,7 @@
 import { TradingViewChart } from "./TradingViewChart";
-import { useStockHistoricalData } from '@/hooks/useStockHistoricalData';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from "sonner";
 
 interface StockHistoricalChartProps {
   ticker: string;
@@ -49,6 +49,36 @@ export const StockHistoricalChart = ({ ticker }: StockHistoricalChartProps) => {
     };
 
     fetchLatestPriceAndExchange();
+
+    // Subscribe to real-time updates
+    const channel = supabase
+      .channel('stock_price_updates')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'stock_historical_data',
+          filter: `ticker=eq.${ticker}`,
+        },
+        (payload) => {
+          console.log('Received real-time update:', payload);
+          if (payload.new && typeof payload.new.close === 'number') {
+            setLatestPrice(Number(payload.new.close));
+            toast.info(`Price updated for ${ticker}`);
+          }
+        }
+      )
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          console.log('Subscribed to real-time updates for:', ticker);
+        }
+      });
+
+    // Cleanup subscription
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [ticker]);
 
   return (
