@@ -33,7 +33,7 @@ export const TradingViewChart = ({ ticker }: TradingViewChartProps) => {
         // Fetch the TradingView symbol from master_stocks
         const { data, error } = await supabase
           .from('master_stocks')
-          .select('tradingview_symbol, exchange')
+          .select('tradingview_symbol')
           .eq('ticker', ticker)
           .maybeSingle();
 
@@ -45,9 +45,8 @@ export const TradingViewChart = ({ ticker }: TradingViewChartProps) => {
 
         // Use the tradingview_symbol if available, otherwise fallback to ticker
         const symbol = data?.tradingview_symbol || ticker;
-        const exchange = data?.exchange || 'NYSE';
         
-        console.log('Initializing chart with symbol:', `${exchange}:${symbol}`);
+        console.log('Initializing chart with symbol:', symbol);
 
         // Clean up previous widget instance
         if (widgetRef.current) {
@@ -57,7 +56,7 @@ export const TradingViewChart = ({ ticker }: TradingViewChartProps) => {
 
         // Create new widget instance with proper typing
         const widgetOptions: ChartingLibraryWidgetOptions = {
-          symbol: `${exchange}:${symbol}`,
+          symbol: symbol,
           interval: 'D',
           container: containerRef.current,
           width: '100%',
