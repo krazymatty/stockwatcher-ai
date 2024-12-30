@@ -5,7 +5,9 @@ export const useTradingViewScript = () => {
   const [isScriptLoaded, setIsScriptLoaded] = useState(false);
 
   useEffect(() => {
+    // Check if script is already loaded
     if (typeof window.TradingView !== 'undefined') {
+      console.log('TradingView library already loaded');
       setIsScriptLoaded(true);
       return;
     }
@@ -14,11 +16,15 @@ export const useTradingViewScript = () => {
       try {
         console.log('Loading TradingView library...');
         const script = document.createElement('script');
-        script.src = 'https://s3.tradingview.com/tv.js';
+        script.src = '/charting_library/charting_library.js';
+        script.type = 'text/javascript';
         script.async = true;
-        script.onload = () => setIsScriptLoaded(true);
-        script.onerror = () => {
-          console.error('Failed to load TradingView library');
+        script.onload = () => {
+          console.log('TradingView library loaded successfully');
+          setIsScriptLoaded(true);
+        };
+        script.onerror = (error) => {
+          console.error('Failed to load TradingView library:', error);
           toast.error('Failed to load chart library');
         };
         document.head.appendChild(script);
@@ -29,6 +35,14 @@ export const useTradingViewScript = () => {
     };
 
     loadScript();
+
+    // Cleanup
+    return () => {
+      const script = document.querySelector('script[src="/charting_library/charting_library.js"]');
+      if (script) {
+        document.head.removeChild(script);
+      }
+    };
   }, []);
 
   return isScriptLoaded;

@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { widget } from '@/lib/tradingview/charting_library';
 import { useTradingViewScript } from '@/hooks/useTradingViewScript';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface TradingViewChartProps {
   ticker: string;
@@ -14,20 +15,31 @@ export const TradingViewChart = ({ ticker }: TradingViewChartProps) => {
 
   useEffect(() => {
     const initializeChart = async () => {
-      if (!isScriptLoaded || !containerRef.current) return;
+      if (!isScriptLoaded || !containerRef.current) {
+        console.log('Script not loaded or container not ready');
+        return;
+      }
 
       try {
+        console.log('Fetching symbol data for:', ticker);
         // Fetch the TradingView symbol from master_stocks
         const { data, error } = await supabase
           .from('master_stocks')
           .select('tradingview_symbol, exchange')
           .eq('ticker', ticker)
-          .single();
+          .maybeSingle();
 
-        if (error) throw error;
+        if (error) {
+          console.error('Error fetching symbol data:', error);
+          toast.error('Error loading chart data');
+          return;
+        }
 
+        // Use the tradingview_symbol if available, otherwise fallback to ticker
         const symbol = data?.tradingview_symbol || ticker;
         const exchange = data?.exchange || 'NYSE';
+        
+        console.log('Initializing chart with symbol:', `${exchange}:${symbol}`);
 
         // Clean up previous widget instance
         if (widgetRef.current) {
@@ -49,6 +61,7 @@ export const TradingViewChart = ({ ticker }: TradingViewChartProps) => {
         });
       } catch (error) {
         console.error('Error initializing TradingView chart:', error);
+        toast.error('Failed to initialize chart');
       }
     };
 
