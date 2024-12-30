@@ -10,6 +10,19 @@ export const futuresMap: Record<string, { symbol: string; exchange: string }> = 
   '/RTY': { symbol: 'CME_MINI:RTY1!', exchange: 'CME' },
 };
 
+// Map of stocks to their correct exchanges
+const stockExchangeMap: Record<string, string> = {
+  'TSLA': 'NASDAQ',
+  'AAPL': 'NASDAQ',
+  'MSFT': 'NASDAQ',
+  'GOOGL': 'NASDAQ',
+  'AMZN': 'NASDAQ',
+  'META': 'NASDAQ',
+  'SPY': 'NYSE ARCA',
+  'QQQ': 'NASDAQ',
+  'IWM': 'NYSE ARCA',
+};
+
 export const getTradingViewSymbol = (ticker: string): { symbol: string; exchange: string } => {
   // Check if it's a futures contract
   const futuresSymbol = futuresMap[ticker.toUpperCase()];
@@ -17,9 +30,11 @@ export const getTradingViewSymbol = (ticker: string): { symbol: string; exchange
     return futuresSymbol;
   }
 
-  // For regular stocks, assume US exchange
+  // Get the exchange from our map, default to NYSE if not found
+  const exchange = stockExchangeMap[ticker.toUpperCase()] || 'NYSE';
+  
   return {
     symbol: ticker.toUpperCase(),
-    exchange: 'NYSE'  // Default to NYSE, but this could be enhanced with more accurate exchange data
+    exchange
   };
 };
