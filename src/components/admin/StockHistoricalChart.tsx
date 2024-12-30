@@ -50,9 +50,10 @@ export const StockHistoricalChart = ({ ticker }: StockHistoricalChartProps) => {
 
     fetchLatestPriceAndExchange();
 
-    // Subscribe to real-time updates
+    // Subscribe to real-time updates with a unique channel name
+    const channelName = `stock_price_updates_${ticker}`;
     const channel = supabase
-      .channel('stock_price_updates')
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
