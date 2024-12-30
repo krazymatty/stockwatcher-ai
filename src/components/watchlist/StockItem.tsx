@@ -27,18 +27,17 @@ export const StockItem = ({ stock, onDelete, onSelect }: StockItemProps) => {
   };
 
   return (
-    <div className="flex items-center justify-between p-1 border rounded-md hover:bg-accent">
-      <Button 
-        variant="ghost" 
-        className="h-7 px-2 font-mono text-sm"
+    <div className="flex items-center justify-between gap-2">
+      <div 
         onClick={onSelect}
+        className="flex-1 p-1 font-mono text-sm border rounded-md hover:bg-accent cursor-pointer transition-colors"
       >
         {stock.ticker}
-      </Button>
+      </div>
       <Button
         variant="ghost"
         size="icon"
-        className="h-7 w-7"
+        className="h-7 w-7 shrink-0"
         onClick={deleteStock}
       >
         <Trash2 className="h-3 w-3" />
