@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTradingViewScript } from '@/hooks/useTradingViewScript';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -11,7 +11,26 @@ interface TradingViewChartProps {
 export const TradingViewChart = ({ ticker }: TradingViewChartProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const widgetRef = useRef<any>(null);
+  const [isContainerReady, setIsContainerReady] = useState(false);
   const isScriptLoaded = useTradingViewScript();
+
+  // Check if container is ready
+  useEffect(() => {
+    const checkContainer = () => {
+      if (containerRef.current && containerRef.current.offsetWidth > 0) {
+        setIsContainerReady(true);
+      }
+    };
+
+    // Check immediately
+    checkContainer();
+
+    // Also check after a short delay to ensure DOM is ready
+    const timeoutId = setTimeout(checkContainer, 100);
+
+    // Cleanup
+    return () => clearTimeout(timeoutId);
+  }, []);
 
   useEffect(() => {
     let timeoutId: NodeJS.Timeout;
@@ -22,15 +41,13 @@ export const TradingViewChart = ({ ticker }: TradingViewChartProps) => {
         return;
       }
 
-      // Wait for the container to be mounted
-      if (!containerRef.current) {
+      if (!isContainerReady) {
         console.log('Container not ready');
         return;
       }
 
       try {
         console.log('Fetching symbol data for:', ticker);
-        // Fetch the TradingView symbol from master_stocks
         const { data, error } = await supabase
           .from('master_stocks')
           .select('tradingview_symbol')
@@ -43,9 +60,7 @@ export const TradingViewChart = ({ ticker }: TradingViewChartProps) => {
           return;
         }
 
-        // Use the tradingview_symbol if available, otherwise fallback to ticker
         const symbol = data?.tradingview_symbol || ticker;
-        
         console.log('Initializing chart with symbol:', symbol);
 
         // Clean up previous widget instance
@@ -58,7 +73,7 @@ export const TradingViewChart = ({ ticker }: TradingViewChartProps) => {
         const widgetOptions: ChartingLibraryWidgetOptions = {
           symbol: symbol,
           interval: 'D',
-          container: containerRef.current,
+          container: containerRef.current!,
           width: '100%',
           height: '100%',
           theme: 'dark',
@@ -71,20 +86,20 @@ export const TradingViewChart = ({ ticker }: TradingViewChartProps) => {
           fullscreen: false,
         };
 
-        // Use a longer delay to ensure DOM is fully ready
+        // Initialize widget with a delay to ensure DOM is fully ready
         timeoutId = setTimeout(() => {
-          if (containerRef.current && containerRef.current.offsetWidth > 0) {
-            try {
+          try {
+            if (containerRef.current && containerRef.current.offsetWidth > 0) {
               widgetRef.current = new window.TradingView.widget(widgetOptions);
-            } catch (err) {
-              console.error('Widget initialization error:', err);
-              toast.error('Failed to initialize chart widget');
+            } else {
+              console.error('Container not properly sized');
+              toast.error('Chart container not ready');
             }
-          } else {
-            console.error('Container not properly sized');
-            toast.error('Chart container not ready');
+          } catch (err) {
+            console.error('Widget initialization error:', err);
+            toast.error('Failed to initialize chart widget');
           }
-        }, 100); // Increased delay to 100ms
+        }, 500); // Increased delay to 500ms for better reliability
       } catch (error) {
         console.error('Error initializing TradingView chart:', error);
         toast.error('Failed to initialize chart');
@@ -102,13 +117,13 @@ export const TradingViewChart = ({ ticker }: TradingViewChartProps) => {
         widgetRef.current = null;
       }
     };
-  }, [isScriptLoaded, ticker]);
+  }, [isScriptLoaded, ticker, isContainerReady]);
 
   return (
     <div 
       ref={containerRef} 
-      className="h-[500px] w-full border rounded-lg overflow-hidden"
-      style={{ minWidth: '100px' }} // Ensure minimum width
+      className="h-[500px] w-full border rounded-lg overflow-hidden bg-background"
+      style={{ minWidth: '300px' }} // Increased minimum width
     />
   );
 };
