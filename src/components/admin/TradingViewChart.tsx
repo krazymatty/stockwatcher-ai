@@ -11,41 +11,44 @@ interface TradingViewChartProps {
 export const TradingViewChart = ({ ticker }: TradingViewChartProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const widgetRef = useRef<any>(null);
+  const mountedRef = useRef(false);
   const [isContainerReady, setIsContainerReady] = useState(false);
   const isScriptLoaded = useTradingViewScript();
 
-  // Check if container is ready
+  // Set mounted ref on component mount
   useEffect(() => {
-    const checkContainer = () => {
-      if (containerRef.current && containerRef.current.offsetWidth > 0) {
-        setIsContainerReady(true);
-      }
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
     };
+  }, []);
 
-    // Create an observer to watch for container size changes
+  // Monitor container size
+  useEffect(() => {
+    if (!containerRef.current) return;
+
+    const element = containerRef.current;
     const resizeObserver = new ResizeObserver((entries) => {
+      if (!mountedRef.current) return;
+      
       for (const entry of entries) {
-        if (entry.contentRect.width > 0) {
+        if (entry.contentRect.width > 0 && entry.contentRect.height > 0) {
           setIsContainerReady(true);
         }
       }
     });
 
-    if (containerRef.current) {
-      resizeObserver.observe(containerRef.current);
-      checkContainer(); // Initial check
-    }
+    resizeObserver.observe(element);
 
     return () => {
-      if (containerRef.current) {
-        resizeObserver.disconnect();
-      }
+      resizeObserver.disconnect();
     };
   }, []);
 
+  // Initialize widget
   useEffect(() => {
     const initializeWidget = async () => {
-      if (!isScriptLoaded || !isContainerReady || !containerRef.current) {
+      if (!isScriptLoaded || !isContainerReady || !containerRef.current || !mountedRef.current) {
         return;
       }
 
@@ -72,9 +75,16 @@ export const TradingViewChart = ({ ticker }: TradingViewChartProps) => {
           widgetRef.current = null;
         }
 
+        // Ensure container is still valid
+        if (!containerRef.current || !mountedRef.current) {
+          console.log('Container no longer valid');
+          return;
+        }
+
         const widgetOptions: ChartingLibraryWidgetOptions = {
           symbol: symbol,
           interval: 'D',
+          container_id: containerRef.current.id,
           container: containerRef.current,
           width: containerRef.current.offsetWidth,
           height: containerRef.current.offsetHeight,
@@ -88,15 +98,18 @@ export const TradingViewChart = ({ ticker }: TradingViewChartProps) => {
           fullscreen: false,
         };
 
+        // Create widget instance
         widgetRef.current = new window.TradingView.widget(widgetOptions);
       } catch (error) {
         console.error('Error initializing TradingView chart:', error);
-        toast.error('Failed to initialize chart');
+        if (mountedRef.current) {
+          toast.error('Failed to initialize chart');
+        }
       }
     };
 
-    // Add a small delay before initialization
-    const timeoutId = setTimeout(initializeWidget, 100);
+    // Delay initialization slightly to ensure DOM is ready
+    const timeoutId = setTimeout(initializeWidget, 250);
 
     return () => {
       clearTimeout(timeoutId);
@@ -109,7 +122,8 @@ export const TradingViewChart = ({ ticker }: TradingViewChartProps) => {
 
   return (
     <div 
-      ref={containerRef} 
+      ref={containerRef}
+      id={`tv_chart_${ticker}`} // Add unique ID for container
       className="h-[500px] w-full border rounded-lg overflow-hidden bg-background"
       style={{ minWidth: '300px' }}
     />
