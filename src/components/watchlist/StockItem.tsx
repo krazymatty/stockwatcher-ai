@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Trash2, LineChart } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { WatchlistStock } from "@/types/watchlist";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -27,10 +27,10 @@ export const StockItem = ({ stock, onDelete, onSelect }: StockItemProps) => {
   };
 
   return (
-    <div className="flex items-center justify-between p-2 border rounded-md">
+    <div className="flex items-center justify-between p-1 border rounded-md hover:bg-accent">
       <Button 
         variant="ghost" 
-        className="font-mono"
+        className="h-7 px-2 font-mono text-sm"
         onClick={onSelect}
       >
         {stock.ticker}
@@ -38,9 +38,10 @@ export const StockItem = ({ stock, onDelete, onSelect }: StockItemProps) => {
       <Button
         variant="ghost"
         size="icon"
+        className="h-7 w-7"
         onClick={deleteStock}
       >
-        <Trash2 className="h-4 w-4" />
+        <Trash2 className="h-3 w-3" />
       </Button>
     </div>
   );
