@@ -22,27 +22,30 @@ export const TradingViewChart = ({ ticker }: TradingViewChartProps) => {
       }
     };
 
-    // Check immediately
-    checkContainer();
+    // Create an observer to watch for container size changes
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.contentRect.width > 0) {
+          setIsContainerReady(true);
+        }
+      }
+    });
 
-    // Also check after a short delay to ensure DOM is ready
-    const timeoutId = setTimeout(checkContainer, 100);
+    if (containerRef.current) {
+      resizeObserver.observe(containerRef.current);
+      checkContainer(); // Initial check
+    }
 
-    // Cleanup
-    return () => clearTimeout(timeoutId);
+    return () => {
+      if (containerRef.current) {
+        resizeObserver.disconnect();
+      }
+    };
   }, []);
 
   useEffect(() => {
-    let timeoutId: NodeJS.Timeout;
-
-    const initializeChart = async () => {
-      if (!isScriptLoaded) {
-        console.log('Script not loaded');
-        return;
-      }
-
-      if (!isContainerReady) {
-        console.log('Container not ready');
+    const initializeWidget = async () => {
+      if (!isScriptLoaded || !isContainerReady || !containerRef.current) {
         return;
       }
 
@@ -69,13 +72,12 @@ export const TradingViewChart = ({ ticker }: TradingViewChartProps) => {
           widgetRef.current = null;
         }
 
-        // Create new widget instance with proper typing
         const widgetOptions: ChartingLibraryWidgetOptions = {
           symbol: symbol,
           interval: 'D',
-          container: containerRef.current!,
-          width: '100%',
-          height: '100%',
+          container: containerRef.current,
+          width: containerRef.current.offsetWidth,
+          height: containerRef.current.offsetHeight,
           theme: 'dark',
           style: '1',
           toolbar_bg: '#f1f3f6',
@@ -86,32 +88,18 @@ export const TradingViewChart = ({ ticker }: TradingViewChartProps) => {
           fullscreen: false,
         };
 
-        // Initialize widget with a delay to ensure DOM is fully ready
-        timeoutId = setTimeout(() => {
-          try {
-            if (containerRef.current && containerRef.current.offsetWidth > 0) {
-              widgetRef.current = new window.TradingView.widget(widgetOptions);
-            } else {
-              console.error('Container not properly sized');
-              toast.error('Chart container not ready');
-            }
-          } catch (err) {
-            console.error('Widget initialization error:', err);
-            toast.error('Failed to initialize chart widget');
-          }
-        }, 500); // Increased delay to 500ms for better reliability
+        widgetRef.current = new window.TradingView.widget(widgetOptions);
       } catch (error) {
         console.error('Error initializing TradingView chart:', error);
         toast.error('Failed to initialize chart');
       }
     };
 
-    initializeChart();
+    // Add a small delay before initialization
+    const timeoutId = setTimeout(initializeWidget, 100);
 
     return () => {
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
+      clearTimeout(timeoutId);
       if (widgetRef.current) {
         widgetRef.current.remove();
         widgetRef.current = null;
@@ -123,7 +111,7 @@ export const TradingViewChart = ({ ticker }: TradingViewChartProps) => {
     <div 
       ref={containerRef} 
       className="h-[500px] w-full border rounded-lg overflow-hidden bg-background"
-      style={{ minWidth: '300px' }} // Increased minimum width
+      style={{ minWidth: '300px' }}
     />
   );
 };
