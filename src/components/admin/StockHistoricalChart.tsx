@@ -78,6 +78,7 @@ export const StockHistoricalChart = ({ ticker }: StockHistoricalChartProps) => {
 
     // Cleanup subscription
     return () => {
+      console.log('Cleaning up subscription for:', ticker);
       supabase.removeChannel(channel);
     };
   }, [ticker]);
