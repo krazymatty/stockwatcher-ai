@@ -1,7 +1,13 @@
 import { supabase } from "@/integrations/supabase/client";
 import { getUserUsername } from "./user";
 
-export const addTickerToMasterStocks = async (ticker: string, userId: string, email: string) => {
+export const addTickerToMasterStocks = async (
+  ticker: string, 
+  userId: string, 
+  email: string,
+  tradingViewSymbol?: string,
+  exchange?: string
+) => {
   const username = await getUserUsername(userId) || email;
   
   const { error } = await supabase
@@ -10,9 +16,11 @@ export const addTickerToMasterStocks = async (ticker: string, userId: string, em
       ticker,
       user_id: userId,
       created_by_email: username,
-      instrument_type: 'stock', // Default to stock type
+      instrument_type: 'stock',
       display_name: `Stock: ${ticker.toUpperCase()}`,
-      metadata: { validated: false }
+      metadata: { validated: false },
+      tradingview_symbol: tradingViewSymbol,
+      exchange: exchange
     });
 
   return { error };

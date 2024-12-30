@@ -1,8 +1,7 @@
 import { useEffect, useRef } from 'react';
+import { widget } from '@/lib/tradingview/charting_library';
 import { useTradingViewScript } from '@/hooks/useTradingViewScript';
-import { useStockHistoricalData } from '@/hooks/useStockHistoricalData';
-import { createDatafeedConfig } from '@/config/tradingViewConfig';
-import { toast } from "sonner";
+import { supabase } from '@/integrations/supabase/client';
 
 interface TradingViewChartProps {
   ticker: string;
@@ -12,87 +11,56 @@ export const TradingViewChart = ({ ticker }: TradingViewChartProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const widgetRef = useRef<any>(null);
   const isScriptLoaded = useTradingViewScript();
-  const { fetchBars } = useStockHistoricalData();
 
   useEffect(() => {
-    let timeoutId: NodeJS.Timeout;
-    let isComponentMounted = true;
-
-    const initializeWidget = () => {
-      if (!isScriptLoaded || !containerRef.current || !window.TradingView) {
-        return;
-      }
-
-      // Clean up previous widget instance if it exists
-      if (widgetRef.current) {
-        try {
-          widgetRef.current.remove();
-        } catch (error) {
-          console.error('Error cleaning up previous widget:', error);
-        }
-        widgetRef.current = null;
-      }
+    const initializeChart = async () => {
+      if (!isScriptLoaded || !containerRef.current) return;
 
       try {
-        console.log('Initializing TradingView widget for ticker:', ticker);
-        
-        const containerId = `tv_chart_${Date.now()}`;
-        if (containerRef.current) {
-          containerRef.current.id = containerId;
+        // Fetch the TradingView symbol from master_stocks
+        const { data, error } = await supabase
+          .from('master_stocks')
+          .select('tradingview_symbol, exchange')
+          .eq('ticker', ticker)
+          .single();
+
+        if (error) throw error;
+
+        const symbol = data?.tradingview_symbol || ticker;
+        const exchange = data?.exchange || 'NYSE';
+
+        // Clean up previous widget instance
+        if (widgetRef.current) {
+          widgetRef.current.remove();
+          widgetRef.current = null;
         }
-        
-        timeoutId = setTimeout(() => {
-          if (!isComponentMounted || !containerRef.current) return;
-          
-          widgetRef.current = new window.TradingView.widget({
-            symbol: ticker,
-            container_id: containerId,
-            autosize: true,
-            theme: 'dark',
-            time_zone: "America/New_York",
-            datafeed: createDatafeedConfig(fetchBars),
-            library_path: 'https://s3.tradingview.com/tv.js/',
-            interval: 'D',
-            locale: 'en',
-            disabled_features: ['header_symbol_search'],
-            enabled_features: [],
-            allow_symbol_change: false
-          });
-        }, 100);
+
+        // Create new widget instance
+        widgetRef.current = new widget({
+          symbol: `${exchange}:${symbol}`,
+          interval: 'D',
+          container: containerRef.current,
+          library_path: '/charting_library/',
+          locale: 'en',
+          disabled_features: ['use_localstorage_for_settings'],
+          enabled_features: ['study_templates'],
+          theme: 'dark',
+          autosize: true,
+        });
       } catch (error) {
-        console.error('Error initializing TradingView widget:', error);
-        toast.error('Error initializing chart');
+        console.error('Error initializing TradingView chart:', error);
       }
     };
 
-    initializeWidget();
+    initializeChart();
 
     return () => {
-      isComponentMounted = false;
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
-      
-      // Safe cleanup of the widget
       if (widgetRef.current) {
-        try {
-          // Check if the container still exists before removing
-          if (containerRef.current && containerRef.current.parentNode) {
-            widgetRef.current.remove();
-          }
-        } catch (error) {
-          // Silently handle cleanup errors as the component is being unmounted
-          console.debug('Widget cleanup skipped:', error);
-        }
+        widgetRef.current.remove();
         widgetRef.current = null;
       }
     };
-  }, [ticker, isScriptLoaded, fetchBars]);
+  }, [isScriptLoaded, ticker]);
 
-  return (
-    <div 
-      ref={containerRef}
-      className="w-full h-[600px] border rounded-lg overflow-hidden bg-background"
-    />
-  );
+  return <div ref={containerRef} className="h-[500px]" />;
 };

@@ -8,6 +8,7 @@ import { Watchlist } from "@/types/watchlist";
 import { useSession } from "@supabase/auth-helpers-react";
 import { addTickerToMasterStocks } from "@/utils/masterStocks";
 import { fetchAndStoreHistoricalData } from "@/utils/stockData";
+import { getTradingViewSymbol } from "@/utils/tradingViewSymbols";
 
 interface TickerInputProps {
   selectedWatchlist: Watchlist;
@@ -63,10 +64,15 @@ export const TickerInput = ({ selectedWatchlist, onStocksChanged }: TickerInputP
         }
 
         try {
+          // Get TradingView symbol mapping
+          const { symbol: tvSymbol, exchange } = getTradingViewSymbol(ticker);
+
           const { error: masterStocksError } = await addTickerToMasterStocks(
             ticker,
             session.user.id,
-            session.user.email!
+            session.user.email!,
+            tvSymbol,
+            exchange
           );
 
           if (masterStocksError) {
@@ -83,7 +89,7 @@ export const TickerInput = ({ selectedWatchlist, onStocksChanged }: TickerInputP
             // Continue with adding to watchlist even if historical data fetch fails
           }
 
-          // Then add to watchlist_stocks
+          // Add to watchlist_stocks
           const { error: watchlistStocksError } = await supabase
             .from('watchlist_stocks')
             .insert({

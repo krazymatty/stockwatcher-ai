@@ -14,30 +14,36 @@ export type Database = {
           created_at: string
           created_by_email: string | null
           display_name: string | null
+          exchange: string | null
           instrument_type: string
           last_updated: string | null
           metadata: Json | null
           ticker: string
+          tradingview_symbol: string | null
           user_id: string | null
         }
         Insert: {
           created_at?: string
           created_by_email?: string | null
           display_name?: string | null
+          exchange?: string | null
           instrument_type: string
           last_updated?: string | null
           metadata?: Json | null
           ticker: string
+          tradingview_symbol?: string | null
           user_id?: string | null
         }
         Update: {
           created_at?: string
           created_by_email?: string | null
           display_name?: string | null
+          exchange?: string | null
           instrument_type?: string
           last_updated?: string | null
           metadata?: Json | null
           ticker?: string
+          tradingview_symbol?: string | null
           user_id?: string | null
         }
         Relationships: []
